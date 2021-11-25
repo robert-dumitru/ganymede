@@ -1,0 +1,14 @@
+service: ipnyb-converter
+provider:
+  name: aws
+  runtime: python3.9
+  region: na-east-1
+  profile: ipnyb-converter
+functions:
+  shortbot:
+    handler: handler.shortbot
+    events:
+      - http:
+          path: short-bot
+          method: post
+          cors: true
