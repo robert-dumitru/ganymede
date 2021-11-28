@@ -6,7 +6,7 @@ provider:
   profile: ipnyb-converter
 functions:
   shortbot:
-    handler: handler.shortbot
+    handler: converter.handler
     events:
       - http:
           path: short-bot
