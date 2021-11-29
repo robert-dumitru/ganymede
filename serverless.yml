@@ -4,11 +4,17 @@ provider:
   runtime: python3.9
   region: na-east-1
   profile: ipnyb-converter
+  ecr:
+    images:
+      appimage:
+        path: ./
+
 functions:
-  shortbot:
-    handler: converter.handler
+  ipnyb-converter-bot:
+    image:
+      name: appimage
     events:
       - http:
-          path: short-bot
+          path: ipnyb-converter-bot
           method: post
           cors: true
