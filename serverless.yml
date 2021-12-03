@@ -2,7 +2,7 @@ service: ipnyb-converter
 provider:
   name: aws
   runtime: python3.9
-  region: na-east-1
+  region: us-east-1
   profile: ipnyb-converter
   ecr:
     images:
