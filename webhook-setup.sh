@@ -1,2 +1,2 @@
 #!/bin/bash
-curl --request POST --url https://api.telegram.org/bot2146290119:AAEnOmNToSbKolSrc_BapNT7Q5__t7FTyvI/setWebhook --header 'content-type: application/json' --data '{"url": "https://mbytfpyrtb.execute-api.us-east-1.amazonaws.com/dev/ipnyb-converter-bot"}'
+curl --request POST --url https://api.telegram.org/bot2146290119:AAGcFl-8GbHYwaDU6yzBgaDw_cAgOUVNRA4/setWebhook --header 'content-type: application/json' --data '{"url": "https://mbytfpyrtb.execute-api.us-east-1.amazonaws.com/dev/ipnyb-converter-bot"}'
