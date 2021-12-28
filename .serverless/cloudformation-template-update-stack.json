@@ -1,0 +1,559 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "The AWS CloudFormation template for this Serverless application",
+  "Resources": {
+    "ServerlessDeploymentBucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketEncryption": {
+          "ServerSideEncryptionConfiguration": [
+            {
+              "ServerSideEncryptionByDefault": {
+                "SSEAlgorithm": "AES256"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "ServerlessDeploymentBucketPolicy": {
+      "Type": "AWS::S3::BucketPolicy",
+      "Properties": {
+        "Bucket": {
+          "Ref": "ServerlessDeploymentBucket"
+        },
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "s3:*",
+              "Effect": "Deny",
+              "Principal": "*",
+              "Resource": [
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":s3:::",
+                      {
+                        "Ref": "ServerlessDeploymentBucket"
+                      },
+                      "/*"
+                    ]
+                  ]
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":s3:::",
+                      {
+                        "Ref": "ServerlessDeploymentBucket"
+                      }
+                    ]
+                  ]
+                }
+              ],
+              "Condition": {
+                "Bool": {
+                  "aws:SecureTransport": false
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "MessagesLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/inpyb-converter-test-services-dev-messages"
+      }
+    },
+    "LatexDashconverterLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/${service}-latex"
+      }
+    },
+    "ChromiumDashconverterLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/ipnyb-converter-dev-converter"
+      }
+    },
+    "IamRoleLambdaExecution": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "lambda.amazonaws.com"
+                ]
+              },
+              "Action": [
+                "sts:AssumeRole"
+              ]
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": {
+              "Fn::Join": [
+                "-",
+                [
+                  "inpyb-converter-test-services",
+                  "dev",
+                  "lambda"
+                ]
+              ]
+            },
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogStream",
+                    "logs:CreateLogGroup"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${service}-latex:*"
+                    },
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/ipnyb-converter-dev-converter:*"
+                    },
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/inpyb-converter-test-services-dev*:*"
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${service}-latex:*:*"
+                    },
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/ipnyb-converter-dev-converter:*:*"
+                    },
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/inpyb-converter-test-services-dev*:*:*"
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "lambda:Invoke",
+                    "lambda:InvokeAsync",
+                    "lambda:InvokeFunction"
+                  ],
+                  "Resource": "arn:aws:lambda:*"
+                }
+              ]
+            }
+          }
+        ],
+        "Path": "/",
+        "RoleName": {
+          "Fn::Join": [
+            "-",
+            [
+              "inpyb-converter-test-services",
+              "dev",
+              {
+                "Ref": "AWS::Region"
+              },
+              "lambdaRole"
+            ]
+          ]
+        }
+      }
+    },
+    "TelegramLambdaLayer": {
+      "Type": "AWS::Lambda::LayerVersion",
+      "Properties": {
+        "Content": {
+          "S3Bucket": {
+            "Ref": "ServerlessDeploymentBucket"
+          },
+          "S3Key": "serverless/inpyb-converter-test-services/dev/1640721130450-2021-12-28T19:52:10.450Z/telegram.zip"
+        },
+        "LayerName": "telegram"
+      }
+    },
+    "MessagesLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ServerlessDeploymentBucket"
+          },
+          "S3Key": "serverless/inpyb-converter-test-services/dev/1640721130450-2021-12-28T19:52:10.450Z/inpyb-converter-test-services.zip"
+        },
+        "Handler": "messages.handler",
+        "Runtime": "python3.9",
+        "FunctionName": "inpyb-converter-test-services-dev-messages",
+        "MemorySize": 1024,
+        "Timeout": 30,
+        "Role": {
+          "Fn::GetAtt": [
+            "IamRoleLambdaExecution",
+            "Arn"
+          ]
+        },
+        "Layers": [
+          {
+            "Ref": "TelegramLambdaLayer"
+          }
+        ]
+      },
+      "DependsOn": [
+        "MessagesLogGroup"
+      ]
+    },
+    "MessagesLambdaVersiondNkwH6qL5E5OXybgY0F17FLrfY4JoKMdQrl2XmU": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "MessagesLambdaFunction"
+        },
+        "CodeSha256": "KsnrIvpUWuM9Q1Gq9cdXnzEaJQCw+s2T/xZhcfX7xb0="
+      }
+    },
+    "ChromiumDashconverterLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "ImageUri": "725577849563.dkr.ecr.us-east-1.amazonaws.com/serverless-inpyb-converter-test-services-dev@sha256:69f16382aaad24336f3517c74fa7f6b8f4d0746d03f22e6213b5489b8b0b1cc4"
+        },
+        "PackageType": "Image",
+        "FunctionName": "ipnyb-converter-dev-converter",
+        "MemorySize": 5120,
+        "Timeout": 120,
+        "Role": {
+          "Fn::GetAtt": [
+            "IamRoleLambdaExecution",
+            "Arn"
+          ]
+        }
+      },
+      "DependsOn": [
+        "ChromiumDashconverterLogGroup"
+      ]
+    },
+    "ChromiumDashconverterLambdaVersionfNgG66JKiuT4LdQhO9NF569be0CdSA5I7Ux4zYaiv9c": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "ChromiumDashconverterLambdaFunction"
+        },
+        "CodeSha256": "69f16382aaad24336f3517c74fa7f6b8f4d0746d03f22e6213b5489b8b0b1cc4"
+      }
+    },
+    "LatexDashconverterLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "ImageUri": "725577849563.dkr.ecr.us-east-1.amazonaws.com/serverless-inpyb-converter-test-services-dev@sha256:1466a407b302157c934c8b442caf0b237a6ee951b57e0bb9cf724159834909d2"
+        },
+        "PackageType": "Image",
+        "FunctionName": "${service}-latex",
+        "MemorySize": 5120,
+        "Timeout": 120,
+        "Role": {
+          "Fn::GetAtt": [
+            "IamRoleLambdaExecution",
+            "Arn"
+          ]
+        }
+      },
+      "DependsOn": [
+        "LatexDashconverterLogGroup"
+      ]
+    },
+    "LatexDashconverterLambdaVersionXQAA2aNigfFrpBLPQLJ0hFwoY1aJHRPA6mFvei9Qss": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "LatexDashconverterLambdaFunction"
+        },
+        "CodeSha256": "1466a407b302157c934c8b442caf0b237a6ee951b57e0bb9cf724159834909d2"
+      }
+    },
+    "ApiGatewayRestApi": {
+      "Type": "AWS::ApiGateway::RestApi",
+      "Properties": {
+        "Name": "dev-inpyb-converter-test-services",
+        "EndpointConfiguration": {
+          "Types": [
+            "EDGE"
+          ]
+        },
+        "Policy": ""
+      }
+    },
+    "ApiGatewayResourceIpnybDashconverterDashbot": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "ParentId": {
+          "Fn::GetAtt": [
+            "ApiGatewayRestApi",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "ipnyb-converter-bot",
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        }
+      }
+    },
+    "ApiGatewayMethodIpnybDashconverterDashbotOptions": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "AuthorizationType": "NONE",
+        "HttpMethod": "OPTIONS",
+        "MethodResponses": [
+          {
+            "StatusCode": "200",
+            "ResponseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": true,
+              "method.response.header.Access-Control-Allow-Headers": true,
+              "method.response.header.Access-Control-Allow-Methods": true
+            },
+            "ResponseModels": {}
+          }
+        ],
+        "RequestParameters": {},
+        "Integration": {
+          "Type": "MOCK",
+          "RequestTemplates": {
+            "application/json": "{statusCode:200}"
+          },
+          "ContentHandling": "CONVERT_TO_TEXT",
+          "IntegrationResponses": [
+            {
+              "StatusCode": "200",
+              "ResponseParameters": {
+                "method.response.header.Access-Control-Allow-Origin": "'*'",
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+                "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST'"
+              },
+              "ResponseTemplates": {
+                "application/json": ""
+              }
+            }
+          ]
+        },
+        "ResourceId": {
+          "Ref": "ApiGatewayResourceIpnybDashconverterDashbot"
+        },
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        }
+      }
+    },
+    "ApiGatewayMethodIpnybDashconverterDashbotPost": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "HttpMethod": "POST",
+        "RequestParameters": {},
+        "ResourceId": {
+          "Ref": "ApiGatewayResourceIpnybDashconverterDashbot"
+        },
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        },
+        "ApiKeyRequired": false,
+        "AuthorizationType": "NONE",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+          "Type": "AWS_PROXY",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "MessagesLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "MethodResponses": []
+      },
+      "DependsOn": [
+        "MessagesLambdaPermissionApiGateway"
+      ]
+    },
+    "ApiGatewayDeployment1640721122866": {
+      "Type": "AWS::ApiGateway::Deployment",
+      "Properties": {
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        },
+        "StageName": "dev"
+      },
+      "DependsOn": [
+        "ApiGatewayMethodIpnybDashconverterDashbotOptions",
+        "ApiGatewayMethodIpnybDashconverterDashbotPost"
+      ]
+    },
+    "MessagesLambdaPermissionApiGateway": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "MessagesLambdaFunction",
+            "Arn"
+          ]
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "/*/*"
+            ]
+          ]
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "ServerlessDeploymentBucketName": {
+      "Value": {
+        "Ref": "ServerlessDeploymentBucket"
+      },
+      "Export": {
+        "Name": "sls-inpyb-converter-test-services-dev-ServerlessDeploymentBucketName"
+      }
+    },
+    "TelegramLambdaLayerQualifiedArn": {
+      "Description": "Current Lambda layer version",
+      "Value": {
+        "Ref": "TelegramLambdaLayer"
+      },
+      "Export": {
+        "Name": "sls-inpyb-converter-test-services-dev-TelegramLambdaLayerQualifiedArn"
+      }
+    },
+    "TelegramLambdaLayerHash": {
+      "Description": "Current Lambda layer hash",
+      "Value": "b2ad07ec3dde32a653220a086482619d5c5c3dd9",
+      "Export": {
+        "Name": "sls-inpyb-converter-test-services-dev-TelegramLambdaLayerHash"
+      }
+    },
+    "TelegramLambdaLayerS3Key": {
+      "Description": "Current Lambda layer S3Key",
+      "Value": "serverless/inpyb-converter-test-services/dev/1640721130450-2021-12-28T19:52:10.450Z/telegram.zip",
+      "Export": {
+        "Name": "sls-inpyb-converter-test-services-dev-TelegramLambdaLayerS3Key"
+      }
+    },
+    "MessagesLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "MessagesLambdaVersiondNkwH6qL5E5OXybgY0F17FLrfY4JoKMdQrl2XmU"
+      },
+      "Export": {
+        "Name": "sls-inpyb-converter-test-services-dev-MessagesLambdaFunctionQualifiedArn"
+      }
+    },
+    "ChromiumDashconverterLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "ChromiumDashconverterLambdaVersionfNgG66JKiuT4LdQhO9NF569be0CdSA5I7Ux4zYaiv9c"
+      },
+      "Export": {
+        "Name": "sls-inpyb-converter-test-services-dev-ChromiumDashconverterLambdaFunctionQualifiedArn"
+      }
+    },
+    "LatexDashconverterLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "LatexDashconverterLambdaVersionXQAA2aNigfFrpBLPQLJ0hFwoY1aJHRPA6mFvei9Qss"
+      },
+      "Export": {
+        "Name": "sls-inpyb-converter-test-services-dev-LatexDashconverterLambdaFunctionQualifiedArn"
+      }
+    },
+    "ServiceEndpoint": {
+      "Description": "URL of the service endpoint",
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "https://",
+            {
+              "Ref": "ApiGatewayRestApi"
+            },
+            ".execute-api.",
+            {
+              "Ref": "AWS::Region"
+            },
+            ".",
+            {
+              "Ref": "AWS::URLSuffix"
+            },
+            "/dev"
+          ]
+        ]
+      },
+      "Export": {
+        "Name": "sls-inpyb-converter-test-services-dev-ServiceEndpoint"
+      }
+    }
+  }
+}

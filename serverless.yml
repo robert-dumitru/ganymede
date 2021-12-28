@@ -1,23 +1,49 @@
-service: ipnyb-converter
+service: ${file(./parameters.yml):service}
 provider:
   name: aws
   runtime: python3.9
   region: us-east-1
   profile: ipnyb-converter
-  memorySize: 10240
   stage: dev
   timeout: 30
   ecr:
     images:
-      appimage:
-        path: ./
+      lateximage:
+        path: ./latex-renderer
+      chromiumimage:
+        path: ./chromium-renderer
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - lambda:Invoke
+        - lambda:InvokeAsync
+        - lambda:InvokeFunction
+      Resource: arn:aws:lambda:*
+
+layers:
+  telegram:
+    path: telegram-layer
 
 functions:
-  ipnyb-converter-bot:
-    image:
-      name: appimage
+  messages:
+    handler: messages.handler
     events:
       - http:
           path: ipnyb-converter-bot
           method: post
           cors: true
+    layers:
+      - { Ref: TelegramLambdaLayer }
+  latex-converter:
+    name: ${file(./parameters.yml):lambda.latex}
+    image:
+      name: lateximage
+    memorySize: 5120
+    timeout: 120
+  chromium-converter:
+    #name: ${file(./parameters.yml):lambda.chromium}
+    name: ipnyb-converter-dev-converter
+    image:
+      name: chromiumimage
+    memorySize: 5120
+    timeout: 120

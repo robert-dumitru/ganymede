@@ -1,0 +1,4 @@
+requests~=2.26.0
+nbconvert[webpdf]~=6.3.0
+pyTelegramBotAPI~=4.2.0
+pyppeteer~=0.2.6
