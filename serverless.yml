@@ -43,7 +43,7 @@ functions:
     timeout: 120
   chromium-converter:
     #name: ${file(./parameters.yml):lambda.chromium}
-    name: ipnyb-converter-dev-converter
+    name: ipnyb-converter-dev-converter-new
     image:
       name: chromiumimage
     memorySize: 5120

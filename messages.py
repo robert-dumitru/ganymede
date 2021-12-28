@@ -42,7 +42,7 @@ def handler(event, context):
             bot.send_message(chat_id, 'Converting... (this may take a while)')
             # lambda invocation
             boto3.client('lambda').invoke(
-                FunctionName='ipnyb-converter-dev-converter',
+                FunctionName='ipnyb-converter-dev-converter-new',
                 InvocationType='Event',
                 Payload=json.dumps(event)
             )
