@@ -4,8 +4,12 @@ import re
 import requests
 import json
 import telebot
+import yaml
 
-token = '5087307547:AAFtxaY8gLb_Zt9jipwrOF4iSvB01c4mp4I'
+with open('parameters.yml') as f:
+    parameters = yaml.safe_load(f)
+
+token = parameters.get('secrets').get('telegram-token')
 directory = '/tmp'
 bot = telebot.TeleBot(token)
 

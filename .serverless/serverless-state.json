@@ -1,8 +1,8 @@
 {
   "service": {
-    "service": "inpyb-converter-test-services",
+    "service": "ipnyb-converter",
     "serviceObject": {
-      "name": "inpyb-converter-test-services"
+      "name": "ipnyb-converter"
     },
     "provider": {
       "name": "aws",
@@ -109,13 +109,13 @@
           "MessagesLogGroup": {
             "Type": "AWS::Logs::LogGroup",
             "Properties": {
-              "LogGroupName": "/aws/lambda/inpyb-converter-test-services-dev-messages"
+              "LogGroupName": "/aws/lambda/ipnyb-converter-dev-messages"
             }
           },
           "LatexDashconverterLogGroup": {
             "Type": "AWS::Logs::LogGroup",
             "Properties": {
-              "LogGroupName": "/aws/lambda/${service}-latex"
+              "LogGroupName": "/aws/lambda/ipnyb-converter-dev-latex-converter"
             }
           },
           "ChromiumDashconverterLogGroup": {
@@ -149,7 +149,7 @@
                     "Fn::Join": [
                       "-",
                       [
-                        "inpyb-converter-test-services",
+                        "ipnyb-converter",
                         "dev",
                         "lambda"
                       ]
@@ -166,13 +166,7 @@
                         ],
                         "Resource": [
                           {
-                            "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${service}-latex:*"
-                          },
-                          {
-                            "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/ipnyb-converter-dev-converter:*"
-                          },
-                          {
-                            "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/inpyb-converter-test-services-dev*:*"
+                            "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/ipnyb-converter-dev*:*"
                           }
                         ]
                       },
@@ -183,13 +177,7 @@
                         ],
                         "Resource": [
                           {
-                            "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${service}-latex:*:*"
-                          },
-                          {
-                            "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/ipnyb-converter-dev-converter:*:*"
-                          },
-                          {
-                            "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/inpyb-converter-test-services-dev*:*:*"
+                            "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/ipnyb-converter-dev*:*:*"
                           }
                         ]
                       },
@@ -205,7 +193,7 @@
                 "Fn::Join": [
                   "-",
                   [
-                    "inpyb-converter-test-services",
+                    "ipnyb-converter",
                     "dev",
                     {
                       "Ref": "AWS::Region"
@@ -223,7 +211,7 @@
                 "S3Bucket": {
                   "Ref": "ServerlessDeploymentBucket"
                 },
-                "S3Key": "serverless/inpyb-converter-test-services/dev/1640721130450-2021-12-28T19:52:10.450Z/telegram.zip"
+                "S3Key": "serverless/ipnyb-converter/dev/1640725265474-2021-12-28T21:01:05.474Z/telegram.zip"
               },
               "LayerName": "telegram"
             }
@@ -235,11 +223,11 @@
                 "S3Bucket": {
                   "Ref": "ServerlessDeploymentBucket"
                 },
-                "S3Key": "serverless/inpyb-converter-test-services/dev/1640721130450-2021-12-28T19:52:10.450Z/inpyb-converter-test-services.zip"
+                "S3Key": "serverless/ipnyb-converter/dev/1640725265474-2021-12-28T21:01:05.474Z/ipnyb-converter.zip"
               },
               "Handler": "messages.handler",
               "Runtime": "python3.9",
-              "FunctionName": "inpyb-converter-test-services-dev-messages",
+              "FunctionName": "ipnyb-converter-dev-messages",
               "MemorySize": 1024,
               "Timeout": 30,
               "Role": {
@@ -258,7 +246,7 @@
               "MessagesLogGroup"
             ]
           },
-          "MessagesLambdaVersiondNkwH6qL5E5OXybgY0F17FLrfY4JoKMdQrl2XmU": {
+          "MessagesLambdaVersionelDovTTtHScCVSYI6sqoBOzPXoBOyHx9EnXenU9E": {
             "Type": "AWS::Lambda::Version",
             "DeletionPolicy": "Retain",
             "Properties": {
@@ -268,11 +256,42 @@
               "CodeSha256": "KsnrIvpUWuM9Q1Gq9cdXnzEaJQCw+s2T/xZhcfX7xb0="
             }
           },
+          "LatexDashconverterLambdaFunction": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+              "Code": {
+                "ImageUri": "725577849563.dkr.ecr.us-east-1.amazonaws.com/serverless-ipnyb-converter-dev@sha256:1466a407b302157c934c8b442caf0b237a6ee951b57e0bb9cf724159834909d2"
+              },
+              "PackageType": "Image",
+              "FunctionName": "ipnyb-converter-dev-latex-converter",
+              "MemorySize": 5120,
+              "Timeout": 120,
+              "Role": {
+                "Fn::GetAtt": [
+                  "IamRoleLambdaExecution",
+                  "Arn"
+                ]
+              }
+            },
+            "DependsOn": [
+              "LatexDashconverterLogGroup"
+            ]
+          },
+          "LatexDashconverterLambdaVersionQFF3F7nkwUyXX2Si3UhfpGBqHGHQreQAK565GfkM": {
+            "Type": "AWS::Lambda::Version",
+            "DeletionPolicy": "Retain",
+            "Properties": {
+              "FunctionName": {
+                "Ref": "LatexDashconverterLambdaFunction"
+              },
+              "CodeSha256": "1466a407b302157c934c8b442caf0b237a6ee951b57e0bb9cf724159834909d2"
+            }
+          },
           "ChromiumDashconverterLambdaFunction": {
             "Type": "AWS::Lambda::Function",
             "Properties": {
               "Code": {
-                "ImageUri": "725577849563.dkr.ecr.us-east-1.amazonaws.com/serverless-inpyb-converter-test-services-dev@sha256:69f16382aaad24336f3517c74fa7f6b8f4d0746d03f22e6213b5489b8b0b1cc4"
+                "ImageUri": "725577849563.dkr.ecr.us-east-1.amazonaws.com/serverless-ipnyb-converter-dev@sha256:69f16382aaad24336f3517c74fa7f6b8f4d0746d03f22e6213b5489b8b0b1cc4"
               },
               "PackageType": "Image",
               "FunctionName": "ipnyb-converter-dev-converter",
@@ -289,7 +308,7 @@
               "ChromiumDashconverterLogGroup"
             ]
           },
-          "ChromiumDashconverterLambdaVersionfNgG66JKiuT4LdQhO9NF569be0CdSA5I7Ux4zYaiv9c": {
+          "ChromiumDashconverterLambdaVersionXvNjlii3iOcc0qVypDoGzVB0yHoaF5wmyI8881yjhA": {
             "Type": "AWS::Lambda::Version",
             "DeletionPolicy": "Retain",
             "Properties": {
@@ -299,41 +318,10 @@
               "CodeSha256": "69f16382aaad24336f3517c74fa7f6b8f4d0746d03f22e6213b5489b8b0b1cc4"
             }
           },
-          "LatexDashconverterLambdaFunction": {
-            "Type": "AWS::Lambda::Function",
-            "Properties": {
-              "Code": {
-                "ImageUri": "725577849563.dkr.ecr.us-east-1.amazonaws.com/serverless-inpyb-converter-test-services-dev@sha256:1466a407b302157c934c8b442caf0b237a6ee951b57e0bb9cf724159834909d2"
-              },
-              "PackageType": "Image",
-              "FunctionName": "${service}-latex",
-              "MemorySize": 5120,
-              "Timeout": 120,
-              "Role": {
-                "Fn::GetAtt": [
-                  "IamRoleLambdaExecution",
-                  "Arn"
-                ]
-              }
-            },
-            "DependsOn": [
-              "LatexDashconverterLogGroup"
-            ]
-          },
-          "LatexDashconverterLambdaVersionXQAA2aNigfFrpBLPQLJ0hFwoY1aJHRPA6mFvei9Qss": {
-            "Type": "AWS::Lambda::Version",
-            "DeletionPolicy": "Retain",
-            "Properties": {
-              "FunctionName": {
-                "Ref": "LatexDashconverterLambdaFunction"
-              },
-              "CodeSha256": "1466a407b302157c934c8b442caf0b237a6ee951b57e0bb9cf724159834909d2"
-            }
-          },
           "ApiGatewayRestApi": {
             "Type": "AWS::ApiGateway::RestApi",
             "Properties": {
-              "Name": "dev-inpyb-converter-test-services",
+              "Name": "dev-ipnyb-converter",
               "EndpointConfiguration": {
                 "Types": [
                   "EDGE"
@@ -448,7 +436,7 @@
               "MessagesLambdaPermissionApiGateway"
             ]
           },
-          "ApiGatewayDeployment1640721122866": {
+          "ApiGatewayDeployment1640725257999": {
             "Type": "AWS::ApiGateway::Deployment",
             "Properties": {
               "RestApiId": {
@@ -505,7 +493,7 @@
               "Ref": "ServerlessDeploymentBucket"
             },
             "Export": {
-              "Name": "sls-inpyb-converter-test-services-dev-ServerlessDeploymentBucketName"
+              "Name": "sls-ipnyb-converter-dev-ServerlessDeploymentBucketName"
             }
           },
           "TelegramLambdaLayerQualifiedArn": {
@@ -514,48 +502,48 @@
               "Ref": "TelegramLambdaLayer"
             },
             "Export": {
-              "Name": "sls-inpyb-converter-test-services-dev-TelegramLambdaLayerQualifiedArn"
+              "Name": "sls-ipnyb-converter-dev-TelegramLambdaLayerQualifiedArn"
             }
           },
           "TelegramLambdaLayerHash": {
             "Description": "Current Lambda layer hash",
             "Value": "b2ad07ec3dde32a653220a086482619d5c5c3dd9",
             "Export": {
-              "Name": "sls-inpyb-converter-test-services-dev-TelegramLambdaLayerHash"
+              "Name": "sls-ipnyb-converter-dev-TelegramLambdaLayerHash"
             }
           },
           "TelegramLambdaLayerS3Key": {
             "Description": "Current Lambda layer S3Key",
-            "Value": "serverless/inpyb-converter-test-services/dev/1640721130450-2021-12-28T19:52:10.450Z/telegram.zip",
+            "Value": "serverless/ipnyb-converter/dev/1640725265474-2021-12-28T21:01:05.474Z/telegram.zip",
             "Export": {
-              "Name": "sls-inpyb-converter-test-services-dev-TelegramLambdaLayerS3Key"
+              "Name": "sls-ipnyb-converter-dev-TelegramLambdaLayerS3Key"
             }
           },
           "MessagesLambdaFunctionQualifiedArn": {
             "Description": "Current Lambda function version",
             "Value": {
-              "Ref": "MessagesLambdaVersiondNkwH6qL5E5OXybgY0F17FLrfY4JoKMdQrl2XmU"
+              "Ref": "MessagesLambdaVersionelDovTTtHScCVSYI6sqoBOzPXoBOyHx9EnXenU9E"
             },
             "Export": {
-              "Name": "sls-inpyb-converter-test-services-dev-MessagesLambdaFunctionQualifiedArn"
-            }
-          },
-          "ChromiumDashconverterLambdaFunctionQualifiedArn": {
-            "Description": "Current Lambda function version",
-            "Value": {
-              "Ref": "ChromiumDashconverterLambdaVersionfNgG66JKiuT4LdQhO9NF569be0CdSA5I7Ux4zYaiv9c"
-            },
-            "Export": {
-              "Name": "sls-inpyb-converter-test-services-dev-ChromiumDashconverterLambdaFunctionQualifiedArn"
+              "Name": "sls-ipnyb-converter-dev-MessagesLambdaFunctionQualifiedArn"
             }
           },
           "LatexDashconverterLambdaFunctionQualifiedArn": {
             "Description": "Current Lambda function version",
             "Value": {
-              "Ref": "LatexDashconverterLambdaVersionXQAA2aNigfFrpBLPQLJ0hFwoY1aJHRPA6mFvei9Qss"
+              "Ref": "LatexDashconverterLambdaVersionQFF3F7nkwUyXX2Si3UhfpGBqHGHQreQAK565GfkM"
             },
             "Export": {
-              "Name": "sls-inpyb-converter-test-services-dev-LatexDashconverterLambdaFunctionQualifiedArn"
+              "Name": "sls-ipnyb-converter-dev-LatexDashconverterLambdaFunctionQualifiedArn"
+            }
+          },
+          "ChromiumDashconverterLambdaFunctionQualifiedArn": {
+            "Description": "Current Lambda function version",
+            "Value": {
+              "Ref": "ChromiumDashconverterLambdaVersionXvNjlii3iOcc0qVypDoGzVB0yHoaF5wmyI8881yjhA"
+            },
+            "Export": {
+              "Name": "sls-ipnyb-converter-dev-ChromiumDashconverterLambdaFunctionQualifiedArn"
             }
           },
           "ServiceEndpoint": {
@@ -581,7 +569,7 @@
               ]
             },
             "Export": {
-              "Name": "sls-inpyb-converter-test-services-dev-ServiceEndpoint"
+              "Name": "sls-ipnyb-converter-dev-ServiceEndpoint"
             }
           }
         }
@@ -702,26 +690,26 @@
         "layers": {
           "$ref": "$[\"service\"][\"provider\"][\"compiledCloudFormationTemplate\"][\"Resources\"][\"MessagesLambdaFunction\"][\"Properties\"][\"Layers\"]"
         },
-        "name": "inpyb-converter-test-services-dev-messages",
+        "name": "ipnyb-converter-dev-messages",
         "package": {},
         "memory": 1024,
         "timeout": 30,
         "runtime": "python3.9",
         "vpc": {},
-        "versionLogicalId": "MessagesLambdaVersiondNkwH6qL5E5OXybgY0F17FLrfY4JoKMdQrl2XmU"
+        "versionLogicalId": "MessagesLambdaVersionelDovTTtHScCVSYI6sqoBOzPXoBOyHx9EnXenU9E"
       },
       "latex-converter": {
-        "name": "${service}-latex",
         "image": {
           "name": "lateximage"
         },
         "memorySize": 5120,
         "timeout": 120,
         "events": [],
+        "name": "ipnyb-converter-dev-latex-converter",
         "package": {},
         "memory": 5120,
         "vpc": {},
-        "versionLogicalId": "LatexDashconverterLambdaVersionXQAA2aNigfFrpBLPQLJ0hFwoY1aJHRPA6mFvei9Qss"
+        "versionLogicalId": "LatexDashconverterLambdaVersionQFF3F7nkwUyXX2Si3UhfpGBqHGHQreQAK565GfkM"
       },
       "chromium-converter": {
         "name": "ipnyb-converter-dev-converter",
@@ -734,7 +722,7 @@
         "package": {},
         "memory": 5120,
         "vpc": {},
-        "versionLogicalId": "ChromiumDashconverterLambdaVersionfNgG66JKiuT4LdQhO9NF569be0CdSA5I7Ux4zYaiv9c"
+        "versionLogicalId": "ChromiumDashconverterLambdaVersionXvNjlii3iOcc0qVypDoGzVB0yHoaF5wmyI8881yjhA"
       }
     },
     "configValidationMode": "warn",
@@ -762,10 +750,10 @@
       "$ref": "$[\"service\"][\"initialServerlessConfig\"][\"layers\"]"
     },
     "isDashboardMonitoringPreconfigured": false,
-    "artifact": "/home/robertdumitru/Desktop/ipnybconverter/.serverless/inpyb-converter-test-services.zip"
+    "artifact": "/home/robertdumitru/Desktop/ipnybconverter/.serverless/ipnyb-converter.zip"
   },
   "package": {
-    "artifactDirectoryName": "serverless/inpyb-converter-test-services/dev/1640721130450-2021-12-28T19:52:10.450Z",
-    "artifact": "inpyb-converter-test-services.zip"
+    "artifactDirectoryName": "serverless/ipnyb-converter/dev/1640725265474-2021-12-28T21:01:05.474Z",
+    "artifact": "ipnyb-converter.zip"
   }
 }
