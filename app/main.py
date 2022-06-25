@@ -4,8 +4,9 @@ import json
 import telebot
 import logging
 
-from util.file_utils import load_files, check_files, TooManyNBsException
+from util.file_utils import load_files, check_files
 from util.conversion_utils import latex_convert, chromium_convert
+from util.exceptions import NoNBFileError, TooManyNBsFileError
 
 logger = telebot.logger
 logger.setLevel(logging.DEBUG)
@@ -22,7 +23,6 @@ def handler(event: dict, context: dict) -> dict:
         context: AWS Lambda context
 
     Returns: HTTP response
-
     """
     logging.debug(f"Received event: {event}")
     logging.debug(f"Received context: {context}")
