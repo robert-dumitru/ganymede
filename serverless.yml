@@ -1,4 +1,3 @@
-#service: ${file(./parameters.yml):service}
 service: ipnyb-converter
 provider:
   name: aws
@@ -9,10 +8,8 @@ provider:
   timeout: 30
   ecr:
     images:
-      lateximage:
-        path: ./latex-renderer
-      chromiumimage:
-        path: ./chromium-renderer
+      masterimage:
+        path: ./
   iamRoleStatements:
     - Effect: "Allow"
       Action:
@@ -20,10 +17,6 @@ provider:
         - lambda:InvokeAsync
         - lambda:InvokeFunction
       Resource: arn:aws:lambda:*
-
-layers:
-  telegram:
-    path: telegram-layer
 
 functions:
   messages:
