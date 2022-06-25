@@ -1,15 +1,18 @@
-service: ipnyb-converter
+service: ipynb-converter
 provider:
   name: aws
   runtime: python3.9
   region: us-east-1
-  profile: ipnyb-converter
+  profile: ipynb-converter
   stage: dev
-  timeout: 30
+  timeout: 60
   ecr:
     images:
       masterimage:
         path: ./
+        file: DockerFile
+        buildArgs:
+          TELEGRAM_TOKEN: ${env:TELEGRAM_TOKEN}
   iamRoleStatements:
     - Effect: "Allow"
       Action:
@@ -20,24 +23,11 @@ provider:
 
 functions:
   messages:
-    handler: messages.handler
+    image:
+      name: masterimage
+    memorySize: 4096
     events:
       - http:
           path: ipnyb-converter-bot
           method: post
           cors: true
-    layers:
-      - { Ref: TelegramLambdaLayer }
-  latex-converter:
-    #name: ${file(./parameters.yml):lambda.latex}
-    image:
-      name: lateximage
-    memorySize: 5120
-    timeout: 120
-  chromium-converter:
-    #name: ${file(./parameters.yml):lambda.chromium}
-    name: ipnyb-converter-dev-converter-new
-    image:
-      name: chromiumimage
-    memorySize: 5120
-    timeout: 120
