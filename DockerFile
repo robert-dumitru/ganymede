@@ -21,7 +21,7 @@ RUN apt-get install -y \
     texlive-fonts-recommended  \
     texlive-plain-generic
 
-# copy files
+# copy app files
 ARG FUNCTION_DIR="/function/"
 RUN mkdir -p ${FUNCTION_DIR}
 COPY app/* ${FUNCTION_DIR}
