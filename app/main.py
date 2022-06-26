@@ -41,7 +41,8 @@ def handler(event: dict, context: dict) -> dict:
     def help_handler(message: telebot.types.Message) -> dict:
         tb.send_message(
             message.chat.id,
-            "placeholder"  # TODO: add message
+            "To convert something, send me a zip file or ipynb file. I'll convert it to a pdf and send it back to you. "
+            "If your file is a zip file, it must contain exactly one ipynb file."
         )
         return http_200
 
@@ -54,32 +55,34 @@ def handler(event: dict, context: dict) -> dict:
             ipynb_path: str = check_files(workdir)
         except FileError as error:
             logging.debug(error)
-            tb.send_message(message.chat.id, "placeholder")  # TODO: add message
+            tb.send_message(message.chat.id, "Looks like you uploaded the wrong file types. Please try again.")
             return http_200
         except Exception as error:
             logging.error(error)
-            tb.send_message(message.chat.id, "placeholder")  # TODO: add message
+            tb.send_message(message.chat.id, "Looks like there's a problem with your files. Please try again.")
             return http_200
         tb.send_message(message.chat.id, 'Got your files! Hang tight while I convert them...')
         try:
             pdf_path = latex_convert(workdir, ipynb_path)
         except Exception as e:
             logging.debug(e)
-            tb.send_message(message.chat.id, "placeholder")  # TODO: add message
+            tb.send_message(message.chat.id, "Latex conversion failed. Trying chromium...")
             try:
                 pdf_path: str = chromium_convert(workdir, ipynb_path)
             except Exception as e:
                 logging.debug(e)
-                tb.send_message(message.chat.id, "placeholder")  # TODO: add message
-                # TODO: upload prompt?
+                tb.send_message(message.chat.id, "Chromium conversion failed as well :( Check your files again, "
+                                                 "or file a bug report at "
+                                                 "https://github.com/robert-dumitru/ipynbconverterbot/issues/new")
                 return http_200
         tb.send_document(message.chat.id, open(f"{workdir}/{pdf_path}", 'rb'))
-        tb.send_message(message.chat.id, 'placeholder')  # TODO: add message
+        tb.send_message(message.chat.id, "Done!")
         return http_200
 
     @tb.message_handler(lambda message: True)
     def default_handler(message: telebot.types.Message) -> dict:
-        tb.send_message(message.chat.id, "placeholder")  # TODO: add message
+        tb.send_message(message.chat.id, "That's not a valid command! Check /help for the full list of commands you can"
+                                         " use with me.")
         return http_200
 
     return http_200
