@@ -2,7 +2,7 @@ FROM pandoc/core:latest-ubuntu
 
 # set secrets
 ARG TELEGRAM_TOKEN
-ENV TELEGRAM_TOKEN=$TELEGRAM_TOKEN
+ENV TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
 
 # install python and pip
 RUN apt-get update -y
@@ -11,16 +11,18 @@ RUN apt-get install -y python3 \
 
 # install python packages
 RUN pip install --upgrade pip
-RUN pip install -r requirements.txt
+COPY requirements.txt /requirements.txt
+RUN pip install -r /requirements.txt
+RUN rm /requirements.txt
 
 # install texlive
-sudo apt-get install  \
+RUN apt-get install -y \
     texlive-xetex  \
     texlive-fonts-recommended  \
     texlive-plain-generic
 
 # copy files
-ARG FUNCTION_DIR="/function"
+ARG FUNCTION_DIR="/function/"
 RUN mkdir -p ${FUNCTION_DIR}
 COPY app/* ${FUNCTION_DIR}
 

@@ -1,3 +1,5 @@
+org: rdumitru
+app: ipynb-converter-bot
 service: ipynb-converter
 provider:
   name: aws
