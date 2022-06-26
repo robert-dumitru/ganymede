@@ -24,7 +24,7 @@ provider:
 
 functions:
   gateway-handler:
-    handler: main.gateway_handler
+    handler: api_gateway.handler
     events:
       - http:
           path: ipnyb-converter-bot

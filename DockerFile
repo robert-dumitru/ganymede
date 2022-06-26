@@ -35,4 +35,4 @@ RUN pip install \
 
 # set entrypoint and cmd
 ENTRYPOINT [ "/usr/bin/python3", "-m", "awslambdaric" ]
-CMD [ "main.process_messages" ]
+CMD [ "process_messages.handler" ]

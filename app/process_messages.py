@@ -2,7 +2,6 @@ import os
 import json
 import logging
 import telebot
-import boto3
 
 from util.file_utils import load_files, check_files
 from util.conversion_utils import latex_convert, chromium_convert
@@ -11,30 +10,8 @@ from util.exceptions import FileError
 logger = telebot.logger
 logger.setLevel(logging.DEBUG)
 
-http_200 = {'statusCode': 200}
 
-
-def gateway_handler(event: dict, context: dict) -> dict:
-    """
-    This function replies to the gateway and passes on the event to the process_messages function.
-
-    Args:
-        event: AWS Gateway event.
-        context: AWS Lambda context.
-
-    Returns: HTTP response.
-    """
-    logging.debug(f"Received event: {event}")
-    logging.debug(f"Received context: {context}")
-    boto3.client('lambda').invoke(
-        FunctionName='ipynb-converter-dev-messages',
-        InvocationType='Event',
-        Payload=json.dumps(event)
-    )
-    return http_200
-
-
-def process_messages(event: dict, context: dict) -> None:
+def handler(event: dict, context: dict) -> None:
     """
     This function handles messages from the user and directs them to the appropriate conversion function.
 
