@@ -7,7 +7,6 @@ provider:
   region: us-east-1
   profile: ipynb-converter
   stage: dev
-  timeout: 60
   ecr:
     images:
       masterimage:
@@ -24,12 +23,16 @@ provider:
       Resource: arn:aws:lambda:*
 
 functions:
-  messages:
-    image:
-      name: masterimage
-    memorySize: 4096
+  gateway-handler:
+    handler: main.gateway_handler
     events:
       - http:
           path: ipnyb-converter-bot
           method: post
           cors: true
+
+  messages:
+    image:
+      name: masterimage
+    timeout: 60
+    memorySize: 4096

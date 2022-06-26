@@ -1,7 +1,8 @@
 import os
 import json
-import telebot
 import logging
+import telebot
+import boto3
 
 from util.file_utils import load_files, check_files
 from util.conversion_utils import latex_convert, chromium_convert
@@ -13,15 +14,35 @@ logger.setLevel(logging.DEBUG)
 http_200 = {'statusCode': 200}
 
 
-def handler(event: dict, context: dict) -> dict:
+def gateway_handler(event: dict, context: dict) -> dict:
+    """
+    This function replies to the gateway and passes on the event to the process_messages function.
+
+    Args:
+        event: AWS Gateway event.
+        context: AWS Lambda context.
+
+    Returns: HTTP response.
+    """
+    logging.debug(f"Received event: {event}")
+    logging.debug(f"Received context: {context}")
+    boto3.client('lambda').invoke(
+        FunctionName='ipynb-converter-dev-messages',
+        InvocationType='Event',
+        Payload=json.dumps(event)
+    )
+    return http_200
+
+
+def process_messages(event: dict, context: dict) -> None:
     """
     This function handles messages from the user and directs them to the appropriate conversion function.
 
     Args:
-        event: AWS Gateway event
-        context: AWS Lambda context
+        event: AWS Gateway event.
+        context: Lambda Context.
 
-    Returns: HTTP response
+    Returns: None.
     """
     logging.debug(f"Received event: {event}")
     logging.debug(f"Received context: {context}")
@@ -30,24 +51,24 @@ def handler(event: dict, context: dict) -> dict:
     tb.process_new_messages([update.message])
 
     @tb.message_handler(commands=['start'])
-    def start_handler(message: telebot.types.Message) -> dict:
+    def start_handler(message: telebot.types.Message) -> None:
         tb.send_message(
             message.chat.id,
             'Welcome! Please upload your files to convert, or use the command /help for detailed instructions.'
         )
-        return http_200
+        return
 
     @tb.message_handler(commands=['help'])
-    def help_handler(message: telebot.types.Message) -> dict:
+    def help_handler(message: telebot.types.Message) -> None:
         tb.send_message(
             message.chat.id,
             "To convert something, send me a zip file or ipynb file. I'll convert it to a pdf and send it back to you. "
             "If your file is a zip file, it must contain exactly one ipynb file."
         )
-        return http_200
+        return
 
     @tb.message_handler(content_types=['document'])
-    def document_handler(message: telebot.types.Message) -> dict:
+    def document_handler(message: telebot.types.Message) -> None:
         tb.send_message(message.chat.id, "Loading your files...")
         workdir = "/tmp"
         try:
@@ -56,11 +77,11 @@ def handler(event: dict, context: dict) -> dict:
         except FileError as error:
             logging.debug(error)
             tb.send_message(message.chat.id, "Looks like you uploaded the wrong file types. Please try again.")
-            return http_200
+            return
         except Exception as error:
             logging.error(error)
             tb.send_message(message.chat.id, "Looks like there's a problem with your files. Please try again.")
-            return http_200
+            return
         tb.send_message(message.chat.id, 'Got your files! Hang tight while I convert them...')
         try:
             pdf_path = latex_convert(workdir, ipynb_path)
@@ -74,16 +95,14 @@ def handler(event: dict, context: dict) -> dict:
                 tb.send_message(message.chat.id, "Chromium conversion failed as well :( Check your files again, "
                                                  "or file a bug report at "
                                                  "https://github.com/robert-dumitru/ipynbconverterbot/issues/new")
-                return http_200
+                return
         tb.send_document(message.chat.id, open(f"{workdir}/{pdf_path}", 'rb'))
         tb.send_message(message.chat.id, "Done!")
-        return http_200
+        return
 
     @tb.message_handler(lambda message: True)
-    def default_handler(message: telebot.types.Message) -> dict:
+    def default_handler(message: telebot.types.Message) -> None:
         tb.send_message(message.chat.id, "That's not a valid command! Check /help for the full list of commands you can"
                                          " use with me.")
-        return http_200
-
-    return http_200
-
+        return
+    return

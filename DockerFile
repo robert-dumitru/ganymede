@@ -34,5 +34,5 @@ RUN pip install \
         awslambdaric
 
 # set entrypoint and cmd
-ENTRYPOINT [ "/usr/local/bin/python", "-m", "awslambdaric" ]
-CMD [ "main.handler" ]
+ENTRYPOINT [ "/usr/bin/python3", "-m", "awslambdaric" ]
+CMD [ "main.process_messages" ]
