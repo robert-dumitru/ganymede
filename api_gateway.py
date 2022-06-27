@@ -15,9 +15,9 @@ def handler(event: dict, context: dict) -> dict:
     """
     logging.debug(f"Received event: {event}")
     logging.debug(f"Received context: {context}")
-    boto3.client('lambda').invoke(
-        FunctionName='ipynb-converter-dev-messages',
-        InvocationType='Event',
-        Payload=json.dumps(event)
+    boto3.client("lambda").invoke(
+        FunctionName="ipynb-converter-dev-messages",
+        InvocationType="Event",
+        Payload=json.dumps(event),
     )
-    return {'statusCode': 200}
+    return {"statusCode": 200}
