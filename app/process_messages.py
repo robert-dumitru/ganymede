@@ -3,9 +3,9 @@ import json
 import logging
 import telebot
 
-from util.file_utils import load_files, check_files
-from util.conversion_utils import latex_convert, chromium_convert
-from util.exceptions import FileError
+from file_utils import load_files, check_files
+from conversion_utils import latex_convert, chromium_convert
+from exceptions import FileError
 
 logger = telebot.logger
 logger.setLevel(logging.DEBUG)
@@ -25,10 +25,11 @@ def handler(event: dict, context: dict) -> None:
     logging.debug(f"Received context: {context}")
     tb: telebot.TeleBot = telebot.TeleBot(os.environ["TELEGRAM_TOKEN"])
     update: telebot.types.Update = telebot.types.Update.de_json(json.loads(event['body']))
-    tb.process_new_messages([update.message])
+    tb.process_new_updates([update])
 
     @tb.message_handler(commands=['start'])
     def start_handler(message: telebot.types.Message) -> None:
+        logging.debug("Captured start command")
         tb.send_message(
             message.chat.id,
             'Welcome! Please upload your files to convert, or use the command /help for detailed instructions.'
@@ -37,6 +38,7 @@ def handler(event: dict, context: dict) -> None:
 
     @tb.message_handler(commands=['help'])
     def help_handler(message: telebot.types.Message) -> None:
+        logging.debug("Captured help command")
         tb.send_message(
             message.chat.id,
             "To convert something, send me a zip file or ipynb file. I'll convert it to a pdf and send it back to you. "
@@ -46,6 +48,7 @@ def handler(event: dict, context: dict) -> None:
 
     @tb.message_handler(content_types=['document'])
     def document_handler(message: telebot.types.Message) -> None:
+        logging.debug("Captured document")
         tb.send_message(message.chat.id, "Loading your files...")
         workdir = "/tmp"
         try:
@@ -61,14 +64,14 @@ def handler(event: dict, context: dict) -> None:
             return
         tb.send_message(message.chat.id, 'Got your files! Hang tight while I convert them...')
         try:
-            pdf_path = latex_convert(workdir, ipynb_path)
-        except Exception as e:
-            logging.debug(e)
+            pdf_path: str = latex_convert(workdir, ipynb_path)
+        except Exception as error:
+            logging.error(error)
             tb.send_message(message.chat.id, "Latex conversion failed. Trying chromium...")
             try:
                 pdf_path: str = chromium_convert(workdir, ipynb_path)
-            except Exception as e:
-                logging.debug(e)
+            except Exception as error:
+                logging.debug(error)
                 tb.send_message(message.chat.id, "Chromium conversion failed as well :( Check your files again, "
                                                  "or file a bug report at "
                                                  "https://github.com/robert-dumitru/ipynbconverterbot/issues/new")
@@ -77,8 +80,9 @@ def handler(event: dict, context: dict) -> None:
         tb.send_message(message.chat.id, "Done!")
         return
 
-    @tb.message_handler(lambda message: True)
+    @tb.message_handler(func=lambda message: True)
     def default_handler(message: telebot.types.Message) -> None:
+        logging.debug("Captured other message")
         tb.send_message(message.chat.id, "That's not a valid command! Check /help for the full list of commands you can"
                                          " use with me.")
         return

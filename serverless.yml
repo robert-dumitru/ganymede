@@ -1,3 +1,4 @@
+frameworkVersion: '3'
 org: rdumitru
 app: ipynb-converter-bot
 service: ipynb-converter
