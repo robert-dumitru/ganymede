@@ -12,7 +12,7 @@ provider:
     images:
       masterimage:
         path: ./
-        file: DockerFile
+        file: Dockerfile
         buildArgs:
           TELEGRAM_TOKEN: ${env:TELEGRAM_TOKEN}
   iamRoleStatements:
@@ -35,5 +35,5 @@ functions:
   messages:
     image:
       name: masterimage
-    timeout: 60
-    memorySize: 4096
+    timeout: 120
+    memorySize: 10240

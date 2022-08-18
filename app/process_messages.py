@@ -3,11 +3,11 @@ import json
 import logging
 import telebot
 
-from file_utils import load_files, check_files
+from file_utils import load_files
 from conversion_utils import latex_convert, chromium_convert
-from exceptions import FileError
 
-logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
 telebot.logger.setLevel(logging.DEBUG)
 tb: telebot.TeleBot = telebot.TeleBot(os.environ["TELEGRAM_TOKEN"], threaded=False)
 
@@ -54,9 +54,8 @@ def document_handler(message: telebot.types.Message) -> None:
     tb.send_message(message.chat.id, "Loading your files...")
     workdir = "/tmp"
     try:
-        load_files(tb, message.document, workdir)
-        ipynb_path: str = check_files(workdir)
-    except FileError as error:
+        ipynb_path: str = load_files(tb, message.document, workdir)
+    except TypeError as error:
         logging.debug(error)
         tb.send_message(message.chat.id, "Looks like you uploaded the wrong file types. Please try again.")
         return
@@ -66,12 +65,12 @@ def document_handler(message: telebot.types.Message) -> None:
         return
     tb.send_message(message.chat.id, 'Got your files! Hang tight while I convert them...')
     try:
-        pdf_path: str = latex_convert(workdir, ipynb_path)
+        pdf_path: str = latex_convert(ipynb_path, workdir)
     except Exception as error:
         logging.error(error)
         tb.send_message(message.chat.id, "Latex conversion failed. Trying chromium...")
         try:
-            pdf_path: str = chromium_convert(workdir, ipynb_path)
+            pdf_path: str = chromium_convert(ipynb_path, workdir)
         except Exception as error:
             logging.debug(error)
             tb.send_message(message.chat.id, "Chromium conversion failed as well :( Check your files again, "

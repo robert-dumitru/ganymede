@@ -1,5 +1,6 @@
 import os
 import subprocess
+import logging
 
 
 def latex_convert(ipynb_path: str, workdir: str = "/tmp") -> str:
@@ -12,8 +13,18 @@ def latex_convert(ipynb_path: str, workdir: str = "/tmp") -> str:
 
     Returns: path of pdf.
     """
-    subprocess.run(["jupyter", "nbconvert", "--to", "pdf", f"{ipynb_path}"], cwd=f"{workdir}/")
-    pdf_path = os.path.splitext(ipynb_path)[0] + ".pdf"
+    completed_process: subprocess.CompletedProcess = subprocess.run(
+        ["jupyter", "nbconvert", "--to", "pdf", ipynb_path],
+        cwd=workdir + "/",
+        timeout=60,
+    )
+    logging.debug(f"Completed process: {completed_process}")
+    if completed_process.returncode != 0:
+        logging.error(
+            f"Error converting {ipynb_path} to pdf: {completed_process.stdout}"
+        )
+        raise Exception()
+    pdf_path: str = os.path.splitext(ipynb_path)[0] + ".pdf"
     return pdf_path
 
 
@@ -26,6 +37,17 @@ def chromium_convert(ipynb_path: str, workdir: str = "/tmp") -> str:
         workdir: directory to process and store pdf.
 
     Returns: path of pdf.
-
     """
-    raise NotImplementedError
+    completed_process: subprocess.CompletedProcess = subprocess.run(
+        ["jupyter", "nbconvert", ipynb_path, "--to", "webpdf", "--disable-chromium-sandbox"],
+        cwd=workdir + "/",
+        timeout=60,
+    )
+    logging.debug(f"Completed process: {completed_process}")
+    if completed_process.returncode != 0:
+        logging.error(
+            f"Error converting {ipynb_path} to pdf: {completed_process.stdout}"
+        )
+        raise Exception()
+    pdf_path: str = os.path.splitext(ipynb_path)[0] + ".pdf"
+    return pdf_path
