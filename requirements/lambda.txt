@@ -1,0 +1,2 @@
+-r common.txt
+awslambdaric~=2.0.4
