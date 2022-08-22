@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+import uuid
 import telebot
 
 from file_utils import load_files
@@ -10,6 +11,9 @@ logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 telebot.logger.setLevel(logging.DEBUG)
 tb: telebot.TeleBot = telebot.TeleBot(os.environ["TELEGRAM_TOKEN"], threaded=False)
+
+# Workaround so that different requests in ec2 don't conflict
+workdir: str = "/home/ubuntu/ipynbconverterbot/tmp/" + uuid.uuid4().hex
 
 
 def handler(event: dict, context: dict) -> None:
@@ -52,7 +56,6 @@ def help_handler(message: telebot.types.Message) -> None:
 def document_handler(message: telebot.types.Message) -> None:
     logging.debug("Captured document")
     tb.send_message(message.chat.id, "Loading your files...")
-    workdir = "/tmp"
     try:
         ipynb_path: str = load_files(tb, message.document, workdir)
     except TypeError as error:
