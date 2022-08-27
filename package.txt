@@ -1,5 +1,5 @@
 python3
-pip
+python3-pip
 pandoc
 texlive-xetex
 texlive-fonts-recommended
