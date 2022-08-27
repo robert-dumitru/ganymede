@@ -70,6 +70,20 @@ def load_files(document: telebot.types.Document, workdir: str) -> str:
         return ipynb_files[0]
 
 
+def cleanup_files(workdir: str) -> None:
+    """
+    Removes the files from the local filesystem.
+
+    Args:
+        workdir: path to the working directory.
+
+    Returns: None
+    """
+    subprocess.run(["rm", "-rf", workdir], cwd=root)
+    logging.debug(f"Removed {workdir} from {root}")
+    return
+
+
 def latex_convert(ipynb_path: str, workdir: str) -> str:
     """
     Converts the ipynb file into a pdf using latex.
@@ -127,6 +141,7 @@ def start_handler(message: telebot.types.Message) -> None:
         message.chat.id,
         'Welcome! Please upload your files to convert, or use the command /help for detailed instructions.'
     )
+    return
 
 
 @tb.message_handler(commands=['help'])
@@ -137,22 +152,25 @@ def help_handler(message: telebot.types.Message) -> None:
         "To convert something, send me a zip file or ipynb file. I'll convert it to a pdf and send it back to you. "
         "If your file is a zip file, it must contain exactly one ipynb file."
     )
+    return
 
 
 @tb.message_handler(content_types=['document'])
 def document_handler(message: telebot.types.Message) -> None:
     logging.debug("Captured document")
     tb.send_message(message.chat.id, "Loading your files...")
+    workdir: str = uuid.uuid4().hex
     try:
-        workdir: str = uuid.uuid4().hex
         ipynb_path: str = load_files(message.document, workdir)
     except TypeError as error:
         logging.debug(error)
         tb.send_message(message.chat.id, "Looks like you uploaded the wrong file types. Please try again.")
+        cleanup_files(workdir)
         return
     except Exception as error:
         logging.error(error)
         tb.send_message(message.chat.id, "Looks like there's a problem with your files. Please try again.")
+        cleanup_files(workdir)
         return
     tb.send_message(message.chat.id, 'Got your files! Hang tight while I convert them...')
     try:
@@ -167,9 +185,12 @@ def document_handler(message: telebot.types.Message) -> None:
             tb.send_message(message.chat.id, "Chromium conversion failed as well :( Check your files again, "
                                              "or file a bug report at "
                                              "https://github.com/robert-dumitru/ipynbconverterbot/issues/new")
+            cleanup_files(workdir)
             return
-    tb.send_document(message.chat.id, open(f"{workdir}/{pdf_path}", 'rb'))
+    tb.send_document(message.chat.id, open(f"{root + workdir}/{pdf_path}", 'rb'))
     tb.send_message(message.chat.id, "Done! \U00002728\U0001F370\U00002728")
+    cleanup_files(workdir)
+    return
 
 
 @tb.message_handler(func=lambda message: True)
@@ -177,3 +198,4 @@ def default_handler(message: telebot.types.Message) -> None:
     logging.debug("Captured other message")
     tb.send_message(message.chat.id, "That's not a valid command! Check /help for the full list of commands you can"
                                      " use with me.")
+    return
