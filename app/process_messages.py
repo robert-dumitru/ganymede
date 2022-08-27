@@ -8,9 +8,9 @@ import telebot
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 telebot.logger.setLevel(logging.DEBUG)
+# make sure to set the environment variable to bot token
 tb: telebot.TeleBot = telebot.TeleBot(os.environ["TELEGRAM_TOKEN"], threaded=False)
 
-# Workaround so that different requests in ec2 don't conflict
 root: str = "/home/ubuntu/ipynbconverterbot/tmp/"
 
 
