@@ -11,7 +11,7 @@ telebot.logger.setLevel(logging.DEBUG)
 tb: telebot.TeleBot = telebot.TeleBot(os.environ["TELEGRAM_TOKEN"], threaded=False)
 
 # Workaround so that different requests in ec2 don't conflict
-workdir: str = "/home/ubuntu/ipynbconverterbot/tmp/" + uuid.uuid4().hex
+root: str = "/home/ubuntu/ipynbconverterbot/tmp/"
 
 
 def handler(event: dict, context: dict) -> None:
@@ -31,21 +31,23 @@ def handler(event: dict, context: dict) -> None:
     return
 
 
-def load_files(document: telebot.types.Document) -> str:
+def load_files(document: telebot.types.Document, workdir: str) -> str:
     """
     Loads the files from the Telegram message into the local filesystem and checks structure.
 
     Args:
         document: Telegram document object.
+        workdir: path to the working directory.
 
     Returns: None
     """
     # clear any remnants from previous runs (in case instance is already spun up)
-    subprocess.call(f"rm -rf {workdir}/*", shell=True)
+    subprocess.run(["mkdir", "-p", workdir], cwd=root)
+    path: str = root + workdir
     file_info: telebot.types.File = tb.get_file(document.file_id)
-    with open(f"{workdir}/{document.file_name}", "wb") as file:
+    with open(f"{path}/{document.file_name}", "wb") as file:
         file.write(tb.download_file(file_info.file_path))
-    logging.debug(f"Downloaded file to {workdir}/{document.file_name}")
+    logging.debug(f"Downloaded file to {path}/{document.file_name}")
     file_body: str
     ext: str
     file_body, ext = os.path.splitext(document.file_name)
@@ -54,32 +56,33 @@ def load_files(document: telebot.types.Document) -> str:
         pass
     elif ext == ".zip":
         # zip files need to be unzipped
-        subprocess.run(["unzip", f"{workdir}/{document.file_name}", "-d", f"{workdir}"])
+        subprocess.run(["unzip", document.file_name, "-d", "."], cwd=path)
     else:
         raise TypeError(f"Wrong file type: {ext}")
     ipynb_files = [file for file in os.listdir(workdir) if os.path.splitext(file)[1] == ".ipynb"]
     # check file structure
     if len(ipynb_files) == 0:
-        raise TypeError(f"No ipynb file found: {os.listdir(workdir)}")
+        raise TypeError(f"No ipynb file found: {os.listdir(path)}")
     elif len(ipynb_files) > 1:
-        raise TypeError(f"Too many ipynb files found: {os.listdir(workdir)}")
+        raise TypeError(f"Too many ipynb files found: {os.listdir(path)}")
     # return the master ipynb file
     else:
         return ipynb_files[0]
 
 
-def latex_convert(ipynb_path: str) -> str:
+def latex_convert(ipynb_path: str, workdir: str) -> str:
     """
     Converts the ipynb file into a pdf using latex.
 
     Args:
         ipynb_path: path to the ipynb file.
+        workdir: path to the working directory.
 
     Returns: path of pdf.
     """
     completed_process: subprocess.CompletedProcess = subprocess.run(
         ["jupyter", "nbconvert", "--to", "pdf", ipynb_path],
-        cwd=workdir + "/",
+        cwd=root + workdir + "/",
         timeout=60,
     )
     logging.debug(f"Completed process: {completed_process}")
@@ -92,18 +95,19 @@ def latex_convert(ipynb_path: str) -> str:
     return pdf_path
 
 
-def chromium_convert(ipynb_path: str) -> str:
+def chromium_convert(ipynb_path: str, workdir: str) -> str:
     """
     Converts the ipynb file into a pdf using chromium and pyppeteer.
 
     Args:
         ipynb_path: path to the ipynb file.
+        workdir: path to the working directory.
 
     Returns: path of pdf.
     """
     completed_process: subprocess.CompletedProcess = subprocess.run(
         ["jupyter", "nbconvert", ipynb_path, "--to", "webpdf", "--disable-chromium-sandbox"],
-        cwd=workdir + "/",
+        cwd=root + workdir + "/",
         timeout=60,
     )
     logging.debug(f"Completed process: {completed_process}")
@@ -140,7 +144,8 @@ def document_handler(message: telebot.types.Message) -> None:
     logging.debug("Captured document")
     tb.send_message(message.chat.id, "Loading your files...")
     try:
-        ipynb_path: str = load_files(message.document)
+        workdir: str = uuid.uuid4().hex
+        ipynb_path: str = load_files(message.document, workdir)
     except TypeError as error:
         logging.debug(error)
         tb.send_message(message.chat.id, "Looks like you uploaded the wrong file types. Please try again.")
@@ -151,12 +156,12 @@ def document_handler(message: telebot.types.Message) -> None:
         return
     tb.send_message(message.chat.id, 'Got your files! Hang tight while I convert them...')
     try:
-        pdf_path: str = latex_convert(ipynb_path)
+        pdf_path: str = latex_convert(ipynb_path, workdir)
     except Exception as error:
         logging.error(error)
         tb.send_message(message.chat.id, "Latex conversion failed. Trying chromium...")
         try:
-            pdf_path: str = chromium_convert(ipynb_path)
+            pdf_path: str = chromium_convert(ipynb_path, workdir)
         except Exception as error:
             logging.debug(error)
             tb.send_message(message.chat.id, "Chromium conversion failed as well :( Check your files again, "
