@@ -44,8 +44,10 @@ traffic is sent to it.
 6. Run the bot:
 
     ```bash
-    pipenv run python app/process_messages.py
-7. Done! Your bot should now respond to messages.
+    pipenv run python3 app/ec2_server.py > /dev/null 2>&1 &
+    disown
+7. Done! Your bot should now respond to messages. Feel free to close your ssh connection as the bot will keep running in
+the background.
 
 ### AWS Lambda:
 
