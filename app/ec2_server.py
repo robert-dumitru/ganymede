@@ -3,7 +3,7 @@ This is a temporary workaround to get around the docker chromium limitation on l
 this repo, install the requirements, and start the python script. Remember to deactivate webhooks.
 """
 
-import app.process_messages as pm
+import process_messages as pm
 import telebot
 
 tb: telebot.TeleBot = pm.tb

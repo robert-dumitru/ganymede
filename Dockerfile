@@ -61,7 +61,7 @@ RUN apt-get update \
 
 # install python dependencies
 RUN pip install --upgrade pip
-COPY requirements/lambda.txt /requirements.txt
+COPY requirements.txt /requirements.txt
 RUN pip install -r /requirements.txt
 RUN rm /requirements.txt
 

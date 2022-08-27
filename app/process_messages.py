@@ -11,7 +11,7 @@ telebot.logger.setLevel(logging.DEBUG)
 # make sure to set the environment variable to bot token
 tb: telebot.TeleBot = telebot.TeleBot(os.environ["TELEGRAM_TOKEN"], threaded=False)
 
-root: str = "/home/ubuntu/ipynbconverterbot/tmp/"
+ROOT_PATH: str = "/home/ubuntu/ipynbconverterbot/tmp/"
 
 
 def handler(event: dict, context: dict) -> None:
@@ -42,8 +42,8 @@ def load_files(document: telebot.types.Document, workdir: str) -> str:
     Returns: None
     """
     # clear any remnants from previous runs (in case instance is already spun up)
-    subprocess.run(["mkdir", "-p", workdir], cwd=root)
-    path: str = root + workdir
+    subprocess.run(["mkdir", "-p", workdir], cwd=ROOT_PATH)
+    path: str = ROOT_PATH + workdir
     file_info: telebot.types.File = tb.get_file(document.file_id)
     with open(f"{path}/{document.file_name}", "wb") as file:
         file.write(tb.download_file(file_info.file_path))
@@ -79,8 +79,8 @@ def cleanup_files(workdir: str) -> None:
 
     Returns: None
     """
-    subprocess.run(["rm", "-rf", workdir], cwd=root)
-    logging.debug(f"Removed {workdir} from {root}")
+    subprocess.run(["rm", "-rf", workdir], cwd=ROOT_PATH)
+    logging.debug(f"Removed {workdir} from {ROOT_PATH}")
     return
 
 
@@ -96,7 +96,7 @@ def latex_convert(ipynb_path: str, workdir: str) -> str:
     """
     completed_process: subprocess.CompletedProcess = subprocess.run(
         ["jupyter", "nbconvert", "--to", "pdf", ipynb_path],
-        cwd=root + workdir + "/",
+        cwd=ROOT_PATH + workdir + "/",
         timeout=60,
     )
     logging.debug(f"Completed process: {completed_process}")
@@ -121,7 +121,7 @@ def chromium_convert(ipynb_path: str, workdir: str) -> str:
     """
     completed_process: subprocess.CompletedProcess = subprocess.run(
         ["jupyter", "nbconvert", ipynb_path, "--to", "webpdf", "--disable-chromium-sandbox"],
-        cwd=root + workdir + "/",
+        cwd=ROOT_PATH + workdir + "/",
         timeout=60,
     )
     logging.debug(f"Completed process: {completed_process}")
@@ -187,7 +187,7 @@ def document_handler(message: telebot.types.Message) -> None:
                                              "https://github.com/robert-dumitru/ipynbconverterbot/issues/new")
             cleanup_files(workdir)
             return
-    tb.send_document(message.chat.id, open(f"{root + workdir}/{pdf_path}", 'rb'))
+    tb.send_document(message.chat.id, open(f"{ROOT_PATH + workdir}/{pdf_path}", 'rb'))
     tb.send_message(message.chat.id, "Done! \U00002728\U0001F370\U00002728")
     cleanup_files(workdir)
     return
