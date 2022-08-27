@@ -59,7 +59,7 @@ def load_files(document: telebot.types.Document, workdir: str) -> str:
         subprocess.run(["unzip", document.file_name, "-d", "."], cwd=path)
     else:
         raise TypeError(f"Wrong file type: {ext}")
-    ipynb_files = [file for file in os.listdir(workdir) if os.path.splitext(file)[1] == ".ipynb"]
+    ipynb_files = [file for file in os.listdir(path) if os.path.splitext(file)[1] == ".ipynb"]
     # check file structure
     if len(ipynb_files) == 0:
         raise TypeError(f"No ipynb file found: {os.listdir(path)}")
