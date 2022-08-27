@@ -2,10 +2,8 @@ import os
 import json
 import logging
 import uuid
+import subprocess
 import telebot
-
-from file_utils import load_files
-from conversion_utils import latex_convert, chromium_convert
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -33,6 +31,91 @@ def handler(event: dict, context: dict) -> None:
     return
 
 
+def load_files(document: telebot.types.Document) -> str:
+    """
+    Loads the files from the Telegram message into the local filesystem and checks structure.
+
+    Args:
+        document: Telegram document object.
+
+    Returns: None
+    """
+    # clear any remnants from previous runs (in case instance is already spun up)
+    subprocess.call(f"rm -rf {workdir}/*", shell=True)
+    file_info: telebot.types.File = tb.get_file(document.file_id)
+    with open(f"{workdir}/{document.file_name}", "wb") as file:
+        file.write(tb.download_file(file_info.file_path))
+    logging.debug(f"Downloaded file to {workdir}/{document.file_name}")
+    file_body: str
+    ext: str
+    file_body, ext = os.path.splitext(document.file_name)
+    if ext == ".ipynb":
+        # if we get an ipynb file, we can render it without modifications
+        pass
+    elif ext == ".zip":
+        # zip files need to be unzipped
+        subprocess.run(["unzip", f"{workdir}/{document.file_name}", "-d", f"{workdir}"])
+    else:
+        raise TypeError(f"Wrong file type: {ext}")
+    ipynb_files = [file for file in os.listdir(workdir) if os.path.splitext(file)[1] == ".ipynb"]
+    # check file structure
+    if len(ipynb_files) == 0:
+        raise TypeError(f"No ipynb file found: {os.listdir(workdir)}")
+    elif len(ipynb_files) > 1:
+        raise TypeError(f"Too many ipynb files found: {os.listdir(workdir)}")
+    # return the master ipynb file
+    else:
+        return ipynb_files[0]
+
+
+def latex_convert(ipynb_path: str) -> str:
+    """
+    Converts the ipynb file into a pdf using latex.
+
+    Args:
+        ipynb_path: path to the ipynb file.
+
+    Returns: path of pdf.
+    """
+    completed_process: subprocess.CompletedProcess = subprocess.run(
+        ["jupyter", "nbconvert", "--to", "pdf", ipynb_path],
+        cwd=workdir + "/",
+        timeout=60,
+    )
+    logging.debug(f"Completed process: {completed_process}")
+    if completed_process.returncode != 0:
+        logging.error(
+            f"Error converting {ipynb_path} to pdf: {completed_process.stdout}"
+        )
+        raise Exception()
+    pdf_path: str = os.path.splitext(ipynb_path)[0] + ".pdf"
+    return pdf_path
+
+
+def chromium_convert(ipynb_path: str) -> str:
+    """
+    Converts the ipynb file into a pdf using chromium and pyppeteer.
+
+    Args:
+        ipynb_path: path to the ipynb file.
+
+    Returns: path of pdf.
+    """
+    completed_process: subprocess.CompletedProcess = subprocess.run(
+        ["jupyter", "nbconvert", ipynb_path, "--to", "webpdf", "--disable-chromium-sandbox"],
+        cwd=workdir + "/",
+        timeout=60,
+    )
+    logging.debug(f"Completed process: {completed_process}")
+    if completed_process.returncode != 0:
+        logging.error(
+            f"Error converting {ipynb_path} to pdf: {completed_process.stdout}"
+        )
+        raise Exception()
+    pdf_path: str = os.path.splitext(ipynb_path)[0] + ".pdf"
+    return pdf_path
+
+
 @tb.message_handler(commands=['start'])
 def start_handler(message: telebot.types.Message) -> None:
     logging.debug("Captured start command")
@@ -57,7 +140,7 @@ def document_handler(message: telebot.types.Message) -> None:
     logging.debug("Captured document")
     tb.send_message(message.chat.id, "Loading your files...")
     try:
-        ipynb_path: str = load_files(tb, message.document, workdir)
+        ipynb_path: str = load_files(message.document)
     except TypeError as error:
         logging.debug(error)
         tb.send_message(message.chat.id, "Looks like you uploaded the wrong file types. Please try again.")
@@ -68,12 +151,12 @@ def document_handler(message: telebot.types.Message) -> None:
         return
     tb.send_message(message.chat.id, 'Got your files! Hang tight while I convert them...')
     try:
-        pdf_path: str = latex_convert(ipynb_path, workdir)
+        pdf_path: str = latex_convert(ipynb_path)
     except Exception as error:
         logging.error(error)
         tb.send_message(message.chat.id, "Latex conversion failed. Trying chromium...")
         try:
-            pdf_path: str = chromium_convert(ipynb_path, workdir)
+            pdf_path: str = chromium_convert(ipynb_path)
         except Exception as error:
             logging.debug(error)
             tb.send_message(message.chat.id, "Chromium conversion failed as well :( Check your files again, "
