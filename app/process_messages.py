@@ -230,8 +230,12 @@ def document_handler(message: telebot.types.Message) -> None:
             return
     pbar.postfix = "Uploading pdf..."
     try:
+        def submit_file():
+            tb.send_document(message.chat.id, open(f"{ROOT_PATH + workdir}/{pdf_path}", 'rb'))
+            return
+
         pbar.n = 80
-        future: Future = executor.submit(tb.send_document(message.chat.id, open(f"{ROOT_PATH + workdir}/{pdf_path}", 'rb')))
+        future: Future = executor.submit(submit_file())
         progress_bar(future, 100, 5)
         pbar.n = 100
         pbar.postfix = "Done! \U00002728\U0001F370\U00002728"
