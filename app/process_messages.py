@@ -182,7 +182,7 @@ def document_handler(message: telebot.types.Message) -> None:
     )
 
     def progress_bar(process: Future, target: int, expected_time: float) -> Any:
-        timestep: float = 0.5
+        timestep: float = 1
         time_elapsed: float = 0
         initial_n: int = pbar.n
         while not process.done():
