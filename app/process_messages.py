@@ -194,12 +194,13 @@ def document_handler(message: telebot.types.Message) -> None:
         return process.result()
 
     try:
-        future: Future = executor.submit(load_files, (message.document, workdir))
+        future: Future = executor.submit(load_files, message.document, workdir)
         ipynb_path: str = progress_bar(future, 20, 1)
     except TypeError as error:
         logging.debug(error)
         pbar.colour = "red"
         pbar.postfix = "Error: Wrong file type"
+        pbar.close()
         tb.send_message(message.chat.id, "Looks like you uploaded the wrong file types. Please try again.")
         cleanup_files(workdir)
         return
@@ -207,24 +208,26 @@ def document_handler(message: telebot.types.Message) -> None:
         logging.error(error)
         pbar.colour = "red"
         pbar.postfix = "Error: Files could not be loaded"
+        pbar.close()
         tb.send_message(message.chat.id, "Looks like there's a problem with your files. Please try again.")
         cleanup_files(workdir)
         return
     pbar.postfix = "Converting to pdf via LaTeX..."
     try:
-        future: Future = executor.submit(latex_convert, (ipynb_path, workdir))
+        future: Future = executor.submit(latex_convert, ipynb_path, workdir)
         pdf_path: str = progress_bar(future, 60, 8)
     except Exception as error:
         logging.error(error)
         pbar.postfix = "Latex conversion failed. Trying chromium..."
         try:
-            future: Future = executor.submit(chromium_convert, (ipynb_path, workdir))
+            future: Future = executor.submit(chromium_convert, ipynb_path, workdir)
             pdf_path: str = progress_bar(future, 90, 20)
         except Exception as error:
             logging.debug(error)
             pbar.colour = "red"
             pbar.postfix = "Error: Conversion failed"
-            tb.send_message(message.chat.id, "Chromium conversion failed as well :( Check your files again, "
+            pbar.close()
+            tb.send_message(message.chat.id, "Looks like you ran into a bug :( Check your files again, "
                                              "or file a bug report at "
                                              "https://github.com/robert-dumitru/ipynbconverterbot/issues/new")
             cleanup_files(workdir)
