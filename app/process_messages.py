@@ -174,7 +174,7 @@ def document_handler(message: telebot.types.Message) -> None:
         total=100,
         desc="Converting: ",
         unit=" %",
-        bar_format="{desc}: {percentage:3.0f}%|{bar}|{postfix}",
+        bar_format="{desc}{percentage:3.0f}%|{bar}|{postfix}",
         postfix="Loading files...",
         leave=True,
         token=os.environ["TELEGRAM_TOKEN"],
@@ -190,7 +190,11 @@ def document_handler(message: telebot.types.Message) -> None:
             if time_elapsed < expected_time:
                 pbar.update(timestep * (target - initial_n) / expected_time)
                 time_elapsed += timestep
-        return process.result()
+        try:
+            return process.result()
+        except Exception as error:
+            logging.warning(error)
+            return
 
     try:
         future: Future = executor.submit(load_files, message.document, workdir)
@@ -230,13 +234,11 @@ def document_handler(message: telebot.types.Message) -> None:
             return
     pbar.postfix = "Uploading pdf..."
     try:
-        def submit_file():
-            tb.send_document(message.chat.id, open(f"{ROOT_PATH + workdir}/{pdf_path}", 'rb'))
-            return
-
         pbar.n = 80
-        future: Future = executor.submit(submit_file())
-        progress_bar(future, 100, 5)
+        future: Future = executor.submit(
+            tb.send_document(message.chat.id, open(f"{ROOT_PATH + workdir}/{pdf_path}", 'rb'))
+        )
+        progress_bar(future, 100, 2)
         pbar.n = 100
         pbar.postfix = "Done! \U00002728\U0001F370\U00002728"
         pbar.close()
