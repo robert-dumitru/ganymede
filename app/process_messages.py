@@ -217,12 +217,16 @@ def document_handler(message: telebot.types.Message) -> None:
     try:
         future: Future = executor.submit(latex_convert, ipynb_path, workdir)
         pdf_path: str = progress_bar(future, 60, 8)
+        if not pdf_path:
+            raise Exception()
     except Exception as error:
         logging.error(error)
         pbar.postfix = "Latex conversion failed. Trying chromium..."
         try:
             future: Future = executor.submit(chromium_convert, ipynb_path, workdir)
             pdf_path: str = progress_bar(future, 90, 20)
+            if not pdf_path:
+                raise Exception()
         except Exception as error:
             logging.debug(error)
             pbar.postfix = "Error: Conversion failed"
