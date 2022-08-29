@@ -8,8 +8,11 @@ boto3 = "*"
 pytelegrambotapi = "*"
 jupyter = "*"
 pyppeteer = "*"
+tqdm = "*"
 
 [dev-packages]
+black = "*"
+pylint = "*"
 
 [requires]
 python_version = "3.10"
