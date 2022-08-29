@@ -1,9 +1,19 @@
+"""
+If you're reading this, you've reached the guts of this bot. There are a ton of kludges here, and I'm not proud of it.
+For example, all of these functions need to be in the same file for both ec2 and lambda to work. If you want to
+contribute, this is the place that most sorely needs it.
+"""
+
 import os
 import json
 import logging
 import uuid
+import time
 import subprocess
+from concurrent.futures import ProcessPoolExecutor, Future
+from typing import Any
 import telebot
+from tqdm.contrib.telegram import tqdm
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -158,37 +168,72 @@ def help_handler(message: telebot.types.Message) -> None:
 @tb.message_handler(content_types=['document'])
 def document_handler(message: telebot.types.Message) -> None:
     logging.debug("Captured document")
-    tb.send_message(message.chat.id, "Loading your files...")
     workdir: str = uuid.uuid4().hex
+    executor: ProcessPoolExecutor = ProcessPoolExecutor(max_workers=1)
+    pbar = tqdm(
+        total=100,
+        desc="Converting: ",
+        unit=" %",
+        bar_format="{desc}: {percentage:3.0f}%|{bar}|{postfix}",
+        colour="black",
+        postfix="Loading files...",
+        leave=True,
+        token=os.environ["TELEGRAM_TOKEN"],
+        chat_id=message.chat.id
+    )
+
+    def progress_bar(process: Future, target: int, expected_time: float) -> Any:
+        timestep: float = 0.5
+        time_elapsed: float = 0
+        initial_n: int = pbar.n
+        while not process.done():
+            time.sleep(timestep)
+            if time_elapsed < expected_time:
+                pbar.update(timestep * (target - initial_n) / expected_time)
+                time_elapsed += timestep
+        return process.result()
+
     try:
-        ipynb_path: str = load_files(message.document, workdir)
+        future: Future = executor.submit(load_files, (message.document, workdir))
+        ipynb_path: str = progress_bar(future, 20, 1)
     except TypeError as error:
         logging.debug(error)
+        pbar.colour = "red"
+        pbar.postfix = "Error: Wrong file type"
         tb.send_message(message.chat.id, "Looks like you uploaded the wrong file types. Please try again.")
         cleanup_files(workdir)
         return
     except Exception as error:
         logging.error(error)
+        pbar.colour = "red"
+        pbar.postfix = "Error: Files could not be loaded"
         tb.send_message(message.chat.id, "Looks like there's a problem with your files. Please try again.")
         cleanup_files(workdir)
         return
-    tb.send_message(message.chat.id, 'Got your files! Hang tight while I convert them...')
+    pbar.postfix = "Converting to pdf via LaTeX..."
     try:
-        pdf_path: str = latex_convert(ipynb_path, workdir)
+        future: Future = executor.submit(latex_convert, (ipynb_path, workdir))
+        pdf_path: str = progress_bar(future, 60, 8)
     except Exception as error:
         logging.error(error)
-        tb.send_message(message.chat.id, "Latex conversion failed. Trying chromium...")
+        pbar.postfix = "Latex conversion failed. Trying chromium..."
         try:
-            pdf_path: str = chromium_convert(ipynb_path, workdir)
+            future: Future = executor.submit(chromium_convert, (ipynb_path, workdir))
+            pdf_path: str = progress_bar(future, 90, 20)
         except Exception as error:
             logging.debug(error)
+            pbar.colour = "red"
+            pbar.postfix = "Error: Conversion failed"
             tb.send_message(message.chat.id, "Chromium conversion failed as well :( Check your files again, "
                                              "or file a bug report at "
                                              "https://github.com/robert-dumitru/ipynbconverterbot/issues/new")
             cleanup_files(workdir)
             return
+    pbar.n = 99
+    pbar.postfix = "Uploading pdf..."
     tb.send_document(message.chat.id, open(f"{ROOT_PATH + workdir}/{pdf_path}", 'rb'))
-    tb.send_message(message.chat.id, "Done! \U00002728\U0001F370\U00002728")
+    pbar.colour = "green"
+    pbar.postfix = "Done! \U00002728\U0001F370\U00002728"
     cleanup_files(workdir)
     return
 
