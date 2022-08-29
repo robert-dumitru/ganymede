@@ -19,7 +19,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 telebot.logger.setLevel(logging.DEBUG)
 # make sure to set the environment variable to bot token
-tb: telebot.TeleBot = telebot.TeleBot(os.environ["TELEGRAM_TOKEN"], threaded=False)
+tb: telebot.TeleBot = telebot.TeleBot(os.environ["TELEGRAM_TOKEN"])
 
 ROOT_PATH: str = "/home/ubuntu/ipynbconverterbot/tmp/"
 
@@ -175,7 +175,6 @@ def document_handler(message: telebot.types.Message) -> None:
         desc="Converting: ",
         unit=" %",
         bar_format="{desc}: {percentage:3.0f}%|{bar}|{postfix}",
-        colour="black",
         postfix="Loading files...",
         leave=True,
         token=os.environ["TELEGRAM_TOKEN"],
@@ -198,7 +197,6 @@ def document_handler(message: telebot.types.Message) -> None:
         ipynb_path: str = progress_bar(future, 20, 1)
     except TypeError as error:
         logging.debug(error)
-        pbar.colour = "red"
         pbar.postfix = "Error: Wrong file type"
         pbar.close()
         tb.send_message(message.chat.id, "Looks like you uploaded the wrong file types. Please try again.")
@@ -206,7 +204,6 @@ def document_handler(message: telebot.types.Message) -> None:
         return
     except Exception as error:
         logging.error(error)
-        pbar.colour = "red"
         pbar.postfix = "Error: Files could not be loaded"
         pbar.close()
         tb.send_message(message.chat.id, "Looks like there's a problem with your files. Please try again.")
@@ -224,7 +221,6 @@ def document_handler(message: telebot.types.Message) -> None:
             pdf_path: str = progress_bar(future, 90, 20)
         except Exception as error:
             logging.debug(error)
-            pbar.colour = "red"
             pbar.postfix = "Error: Conversion failed"
             pbar.close()
             tb.send_message(message.chat.id, "Looks like you ran into a bug :( Check your files again, "
@@ -232,11 +228,22 @@ def document_handler(message: telebot.types.Message) -> None:
                                              "https://github.com/robert-dumitru/ipynbconverterbot/issues/new")
             cleanup_files(workdir)
             return
-    pbar.n = 99
     pbar.postfix = "Uploading pdf..."
-    tb.send_document(message.chat.id, open(f"{ROOT_PATH + workdir}/{pdf_path}", 'rb'))
-    pbar.colour = "green"
-    pbar.postfix = "Done! \U00002728\U0001F370\U00002728"
+    try:
+        pbar.n = 80
+        future: Future = executor.submit(tb.send_document(message.chat.id, open(f"{ROOT_PATH + workdir}/{pdf_path}", 'rb')))
+        progress_bar(future, 100, 5)
+        pbar.n = 100
+        pbar.postfix = "Done! \U00002728\U0001F370\U00002728"
+        pbar.close()
+    except Exception as error:
+        logging.error(error)
+        pbar.postfix = "ERROR: Upload failed"
+        pbar.close()
+        tb.send_message(message.chat.id, "Looks like you ran into a bug :( Check your files again, "
+                                         "or file a bug report at "
+                                         "https://github.com/robert-dumitru/ipynbconverterbot/issues/new")
+        return
     cleanup_files(workdir)
     return
 
