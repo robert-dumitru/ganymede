@@ -12,7 +12,7 @@ import time
 import subprocess
 from concurrent.futures import ProcessPoolExecutor, Future
 from typing import Any
-import telebot
+import telebot  # noqa: E
 from tqdm.contrib.telegram import tqdm
 
 logger = logging.getLogger()
