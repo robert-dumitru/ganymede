@@ -21,33 +21,29 @@ This method was tested on a t2.micro instance on AWS with an Ubuntu AMI. The bot
 least 1GB of RAM and 1 CPU core. While all render modes work in this setup, it is possible to choke the server if enough
 traffic is sent to it. This process assumes an SSH connection to your server.
 
-1. clone the repository and set up folders:
+1. Make sure that a python 3 executable is available (preferably 3.10) and 
+   [poetry](https://python-poetry.org/docs/#installation) is installed.
+2. clone the repository on your server and create required folders:
 
     ```bash
     git clone https://github.com/robert-dumitru/ipynbconverterbot
     cd ipynbconverterbot
-    mkdir -p tmp
+   mkdir -p tmp
 
-2. Install ubuntu dependencies:
-
-    ```bash
-   sudo apt-get update
-   xargs sudo apt-get install -y < package.txt
-
-3. Set the `TELEGRAM_TOKEN` environment variable to your telegram token.
-4. Install python dependencies:
+3. Install dependencies:
 
     ```bash
-    pip install pipenv
-    pipenv install
+   apt-get update
+   apt-get install pandoc texlive-xetex texlive-fonts-recommended texlive-plain-generic
+   poetry install
 
-5.  Set the `ROOT_PATH` variable in `app/process_messages.py` to the absolute path of the repository on your server.
-6. Run the bot:
-
+4. Set the `TELEGRAM_TOKEN` environment variable to your telegram token, and the `ROOT_PATH` variable to the absolute 
+   path of the `tmp` folder.
+5. Run the bot:
     ```bash
-    pipenv run python3 app/ec2_server.py > /dev/null 2>&1 &
+    poetry run python3 app/bot.py > /dev/null 2>&1 &
     disown
-7. Done! Your bot should now respond to messages. Feel free to close your ssh connection as the bot will keep running in
+6. Done! Your bot should now respond to messages. Feel free to close your ssh connection as the bot will keep running in
 the background.
 
 ### AWS Lambda:
@@ -67,21 +63,19 @@ set up your AWS credentials if you haven't already.
     git clone https://github.com/robert-dumitru/ipynbconverterbot
     cd ipynbconverterbot
 
-3. Set the `ROOT_PATH` variable in `app/process_messages.py` to `\tmp\` (as this is the only writable path in the 
-Lambda environment).
-4. Set the `TELEGRAM_TOKEN` environment variable to your telegram token.
-5. Run the following command to build the docker image and deploy the Lambda function:
+3. Set the `TELEGRAM_TOKEN` environment variable to your telegram token.
+4. Run the following command to build the docker image and deploy the Lambda function:
 
     ```bash
     serverless deploy
-6. Find the URL of the Lambda function in the output of the previous command, and set it as the webhook for your bot 
+   
+5. Find the URL of the Lambda function in the output of the previous command, and set it as the webhook for your bot 
 with this command:
     
     ```bash
-    chmod +x set_webhook.sh
-   ./set_webhook.sh <URL>
+   curl https://api.telegram.org/bot"${TELEGRAM_TOKEN}"/setWebhook?url="<URL>"
 
-7. Done! Your bot should now be up and running.
+6. Done! Your bot should now be up and running.
 
 ## Contributing
 Contributions are welcome. For major changes, please open an issue first to discuss what you would like to change.
