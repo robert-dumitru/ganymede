@@ -6,6 +6,9 @@ ARG DEBIAN_FRONTEND=noninteractive
 ARG TELEGRAM_TOKEN
 ENV TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
 
+# set root path
+ENV ROOT_PATH="/tmp/"
+
 # install python and pip
 RUN apt-get update &&  \
     apt-get install -y python3 \
@@ -73,4 +76,3 @@ COPY ./app/ ${FUNCTION_DIR}
 # set entrypoint and cmd
 WORKDIR ${FUNCTION_DIR}
 ENTRYPOINT [ "/usr/bin/python3", "-m", "awslambdaric" ]
-CMD [ "process_messages.handler" ]

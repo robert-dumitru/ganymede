@@ -25,7 +25,7 @@ provider:
 
 functions:
   gateway-handler:
-    handler: app.lambda.handler
+    handler: app.lambda.passthrough
     events:
       - http:
           path: ipnyb-converter-bot
@@ -35,5 +35,7 @@ functions:
   messages:
     image:
       name: masterimage
+      command:
+        - lambda.converter
     timeout: 120
     memorySize: 10240
