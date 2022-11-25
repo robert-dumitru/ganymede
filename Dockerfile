@@ -1,27 +1,12 @@
-FROM pandoc/core:latest-ubuntu
+FROM python:3.10-bullseye
 
-ARG DEBIAN_FRONTEND=noninteractive
-
-# set secrets
-ARG TELEGRAM_TOKEN
-ENV TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
-
-# set root path
-ENV ROOT_PATH="/tmp/"
-
-# install python and pip
-RUN apt-get update &&  \
-    apt-get install -y python3 \
-    python3-pip
-
-
-#install chromium dependencies
-RUN apt-get update &&  \
+RUN apt-get update && \
     apt-get install -y gconf-service \
     libasound2 \
     libatk1.0-0 \
+    libatk-bridge2.0-0 \
     libc6 \
-    libcairo2 \
+    libcairo2  \
     libcups2 \
     libdbus-1-3 \
     libexpat1 \
@@ -50,29 +35,33 @@ RUN apt-get update &&  \
     libxtst6 \
     ca-certificates \
     fonts-liberation \
+    libappindicator1 \
     libnss3 \
     lsb-release \
-    xdg-utils \
-    wget
+    xdg-utils  \
+    wget  \
+    libcairo-gobject2 \
+    libxinerama1 \
+    libgtk2.0-0 \
+    libpangoft2-1.0-0 \
+    libthai0 \
+    libpixman-1-0 \
+    libxcb-render0 \
+    libharfbuzz0b \
+    libdatrie1 \
+    libgraphite2-3 \
+    libgbm1
+RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - && \
+    echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | tee /etc/apt/sources.list.d/chrome.list &&  \
+    apt-get update &&  \
+    apt-get install -y google-chrome-stable --no-install-recommends
+RUN groupadd chrome && useradd -g chrome -s /bin/bash -G audio,video chrome \
+    && mkdir -p /home/chrome && chown -R chrome:chrome /home/chrome
 
-# install texlive
-RUN apt-get update \
-    && apt-get install -y \
-    texlive-xetex  \
-    texlive-fonts-recommended  \
-    texlive-plain-generic
+ENV VIRTUAL_ENV=/opt/venv
+RUN python3 -m venv $VIRTUAL_ENV
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+RUN pip install pyppeteer
 
-# install python dependencies
-RUN pip install --upgrade pip
-COPY requirements.txt /requirements.txt
-RUN pip install -r /requirements.txt
-RUN rm /requirements.txt
-
-# copy app files
-ARG FUNCTION_DIR="/function/"
-RUN mkdir -p ${FUNCTION_DIR}
-COPY ./app/ ${FUNCTION_DIR}
-
-# set entrypoint and cmd
-WORKDIR ${FUNCTION_DIR}
-ENTRYPOINT [ "/usr/bin/python3", "-m", "awslambdaric" ]
+COPY pyppeteer_test.py .
+CMD ["python3", "-m", "pyppeteer_test"]

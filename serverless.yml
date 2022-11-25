@@ -12,7 +12,7 @@ provider:
     images:
       masterimage:
         path: ./
-        file: Dockerfile
+        file: Dockerfile.old
         buildArgs:
           TELEGRAM_TOKEN: ${env:TELEGRAM_TOKEN}
   iamRoleStatements:
