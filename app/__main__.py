@@ -8,7 +8,7 @@ from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Message
 from tqdm.contrib.telegram import tqdm
 
-from util import (
+from .util import (  # noqa: E
     load_files,
     cleanup_files,
     latex_convert,

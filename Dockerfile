@@ -5,18 +5,14 @@ COPY pyproject.toml poetry.lock ./
 RUN curl -sSL https://install.python-poetry.org | python3 -
 RUN ${HOME}/.local/bin/poetry export --output requirements.txt
 
-FROM pandoc/core:latest-ubuntu
+FROM python:3.10-bullseye
 
 ARG DEBIAN_FRONTEND=noninteractive
 SHELL ["/bin/bash", "-c"]
-# install python and pip
-RUN apt-get update &&  \
-    apt-get install -y python3 \
-    python3-pip \
-    python3-venv
 # patch dependencies for pyppeteer
 RUN apt-get update && \
-    apt-get install -y gconf-service \
+    apt-get install -y  \
+    gconf-service \
     libasound2 \
     libatk1.0-0 \
     libatk-bridge2.0-0 \
@@ -67,11 +63,15 @@ RUN apt-get update && \
     libgraphite2-3 \
     libgbm1
 # install texlive
-RUN apt-get update \
-    && apt-get install -y \
+RUN apt-get update && \
+    apt-get install -y \
     texlive-xetex  \
     texlive-fonts-recommended  \
     texlive-plain-generic
+# install pandoc
+RUN apt-get update && \
+    apt-get install -y \
+    pandoc
 
 # set up python dependencies
 ENV VIRTUAL_ENV=/opt/venv
@@ -82,7 +82,6 @@ RUN pip install -r requirements.txt && pyppeteer-install
 
 # set up run configuration
 ARG IPYNB_TG_TOKEN
-ENV APPDIR=app
-RUN mkdir -p ${APPDIR}
-ADD app /${APPDIR}/
-CMD ["python3", "-m", "${APPDIR}"]
+RUN mkdir -p /app
+ADD app /app/
+CMD ["python3", "-m", "app"]
