@@ -69,7 +69,7 @@ RUN apt-get update \
     && apt-get install -y \
     texlive-xetex  \
     texlive-fonts-recommended  \
-    texlive-plain-generic \
+    texlive-plain-generic
 
 # set up python dependencies
 ENV VIRTUAL_ENV=/opt/venv
