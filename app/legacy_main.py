@@ -14,7 +14,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 telebot.logger.setLevel(logging.DEBUG)
 
-tb: telebot.TeleBot = telebot.TeleBot(os.environ["TELEGRAM_TOKEN"])
+tb: telebot.TeleBot = telebot.TeleBot(os.getenv("TELEGRAM_TOKEN"))
 
 
 @tb.message_handler(commands=['start'])

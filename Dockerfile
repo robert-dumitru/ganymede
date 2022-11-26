@@ -1,5 +1,18 @@
-FROM python:3.10-bullseye
+FROM python:3.10-bullseye as builder
 
+SHELL ["/bin/bash", "-c"]
+COPY pyproject.toml poetry.lock ./
+RUN curl -sSL https://install.python-poetry.org | python3 -
+RUN ${HOME}/.local/bin/poetry export --output requirements.txt
+
+FROM pandoc/core:latest-ubuntu
+
+SHELL ["/bin/bash", "-c"]
+# install python and pip
+RUN apt-get update &&  \
+    apt-get install -y python3 \
+    python3-pip
+# patch dependencies for pyppeteer
 RUN apt-get update && \
     apt-get install -y gconf-service \
     libasound2 \
@@ -51,17 +64,23 @@ RUN apt-get update && \
     libdatrie1 \
     libgraphite2-3 \
     libgbm1
-RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - && \
-    echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | tee /etc/apt/sources.list.d/chrome.list &&  \
-    apt-get update &&  \
-    apt-get install -y google-chrome-stable --no-install-recommends
-RUN groupadd chrome && useradd -g chrome -s /bin/bash -G audio,video chrome \
-    && mkdir -p /home/chrome && chown -R chrome:chrome /home/chrome
+# install texlive
+RUN apt-get update \
+    && apt-get install -y \
+    texlive-xetex  \
+    texlive-fonts-recommended  \
+    texlive-plain-generic \
 
+# set up python dependencies
 ENV VIRTUAL_ENV=/opt/venv
 RUN python3 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
-RUN pip install pyppeteer
+COPY --from=builder requirements.txt .
+RUN pip install -r requirements.txt && pyppeteer-install
 
-COPY pyppeteer_test.py .
-CMD ["python3", "-m", "pyppeteer_test"]
+# set up run configuration
+ARG IPYNB_TG_TOKEN
+ENV APPDIR=app
+RUN mkdir -p ${APPDIR}
+ADD app /${APPDIR}/
+CMD ["python3", "-m", "${APPDIR}"]
