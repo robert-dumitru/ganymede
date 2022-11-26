@@ -7,11 +7,13 @@ RUN ${HOME}/.local/bin/poetry export --output requirements.txt
 
 FROM pandoc/core:latest-ubuntu
 
+ARG DEBIAN_FRONTEND=noninteractive
 SHELL ["/bin/bash", "-c"]
 # install python and pip
 RUN apt-get update &&  \
     apt-get install -y python3 \
-    python3-pip
+    python3-pip \
+    python3-venv
 # patch dependencies for pyppeteer
 RUN apt-get update && \
     apt-get install -y gconf-service \
