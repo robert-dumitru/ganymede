@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "ipynbconverterbot"
-version = "0.6.4"
-description = ""
+version = "1.0.0"
+description = "Dependencies for jupyter converter bot."
 authors = ["Robert Dumitru <72272382+robert-dumitru@users.noreply.github.com>"]
 readme = "README.md"
 

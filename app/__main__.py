@@ -75,20 +75,22 @@ async def document_handler(message: Message) -> None:
         pbar.postfix = "Converting to pdf via LaTeX..."
         try:
             pdf_path = await coro_tqdm_progress(
-                latex_convert(ipynb_path, workdir), pbar, 60, 10
+                latex_convert(ipynb_path, workdir), pbar, 60, 15
             )
             if not pdf_path:
                 raise SystemError("No PDF path found!")
         except SystemError as e:
             logging.warning(e)
+            pbar.postfix = "Converting to pdf via Chromium..."
             pdf_path = await coro_tqdm_progress(
-                chromium_convert(ipynb_path, workdir), pbar, 90, 10
+                chromium_convert(ipynb_path, workdir), pbar, 80, 15
             )
         pbar.postfix = "Uploading pdf..."
         pbar.n = 80
+        file = await aiofiles.open(f"{workdir}/{pdf_path}", "rb")
         upload = bot.send_document(
             message.chat.id,
-            aiofiles.open(f"{workdir}/{pdf_path}", "rb"),
+            file,
             reply_to_message_id=message.id,
         )
         await coro_tqdm_progress(upload, pbar, 100, 2)
