@@ -1,27 +1,23 @@
-FROM pandoc/core:latest-ubuntu
+FROM python:3.10-bullseye as builder
 
+SHELL ["/bin/bash", "-c"]
+COPY pyproject.toml poetry.lock ./
+RUN curl -sSL https://install.python-poetry.org | python3 -
+RUN ${HOME}/.local/bin/poetry export --output requirements.txt
+
+FROM python:3.10-bullseye
+
+SHELL ["/bin/bash", "-c"]
 ARG DEBIAN_FRONTEND=noninteractive
-
-# set secrets
-ARG TELEGRAM_TOKEN
-ENV TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
-
-# set root path
-ENV ROOT_PATH="/tmp/"
-
-# install python and pip
-RUN apt-get update &&  \
-    apt-get install -y python3 \
-    python3-pip
-
-
-#install chromium dependencies
-RUN apt-get update &&  \
-    apt-get install -y gconf-service \
+# patch dependencies for pyppeteer
+RUN apt-get update && \
+    apt-get install -y  \
+    gconf-service \
     libasound2 \
     libatk1.0-0 \
+    libatk-bridge2.0-0 \
     libc6 \
-    libcairo2 \
+    libcairo2  \
     libcups2 \
     libdbus-1-3 \
     libexpat1 \
@@ -50,29 +46,42 @@ RUN apt-get update &&  \
     libxtst6 \
     ca-certificates \
     fonts-liberation \
+    libappindicator1 \
     libnss3 \
     lsb-release \
-    xdg-utils \
-    wget
-
+    xdg-utils  \
+    wget  \
+    libcairo-gobject2 \
+    libxinerama1 \
+    libgtk2.0-0 \
+    libpangoft2-1.0-0 \
+    libthai0 \
+    libpixman-1-0 \
+    libxcb-render0 \
+    libharfbuzz0b \
+    libdatrie1 \
+    libgraphite2-3 \
+    libgbm1
 # install texlive
-RUN apt-get update \
-    && apt-get install -y \
+RUN apt-get update && \
+    apt-get install -y \
     texlive-xetex  \
     texlive-fonts-recommended  \
     texlive-plain-generic
+# install pandoc
+RUN apt-get update && \
+    apt-get install -y \
+    pandoc
 
-# install python dependencies
-RUN pip install --upgrade pip
-COPY requirements.txt /requirements.txt
-RUN pip install -r /requirements.txt
-RUN rm /requirements.txt
+# set up python dependencies
+ENV VIRTUAL_ENV=/opt/venv
+RUN python3 -m venv $VIRTUAL_ENV
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+COPY --from=builder requirements.txt .
+RUN pip install -r requirements.txt && pyppeteer-install
 
-# copy app files
-ARG FUNCTION_DIR="/function/"
-RUN mkdir -p ${FUNCTION_DIR}
-COPY ./app/ ${FUNCTION_DIR}
-
-# set entrypoint and cmd
-WORKDIR ${FUNCTION_DIR}
-ENTRYPOINT [ "/usr/bin/python3", "-m", "awslambdaric" ]
+# set up run configuration
+ARG IPYNB_TG_TOKEN
+RUN mkdir -p /app
+ADD app /app/
+CMD ["python3", "-m", "app"]
