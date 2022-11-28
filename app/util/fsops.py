@@ -24,6 +24,7 @@ async def load_files(tb: AsyncTeleBot, document: Document, workdir: str) -> str:
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
+    await proc.wait()
     if proc.returncode != 0:
         stdout, stderr = await proc.communicate()
         logging.warning(f"STDOUT: {stdout}")
@@ -83,6 +84,7 @@ async def cleanup_files(workdir: str) -> None:
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
+    await proc.wait()
     if proc.returncode != 0:
         stdout, stderr = await proc.communicate()
         logging.warning(f"STDOUT: {stdout}")

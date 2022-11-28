@@ -2,8 +2,6 @@ import asyncio
 import logging
 import os
 
-# TODO: call python functions instead?
-
 
 async def latex_convert(ipynb_path: str, workdir: str) -> str:
     """
@@ -25,6 +23,7 @@ async def latex_convert(ipynb_path: str, workdir: str) -> str:
         stderr=asyncio.subprocess.PIPE,
         cwd=workdir,
     )
+    await proc.wait()
     logging.debug(f"Completed process: {proc}")
     if proc.returncode != 0:
         stdout, stderr = await proc.communicate()
@@ -56,6 +55,7 @@ async def chromium_convert(ipynb_path: str, workdir: str) -> str:
         stderr=asyncio.subprocess.PIPE,
         cwd=workdir,
     )
+    await proc.wait()
     logging.debug(f"Completed process: {proc}")
     if proc.returncode != 0:
         stdout, stderr = await proc.communicate()

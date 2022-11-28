@@ -7,8 +7,8 @@ RUN ${HOME}/.local/bin/poetry export --output requirements.txt
 
 FROM python:3.10-bullseye
 
-ARG DEBIAN_FRONTEND=noninteractive
 SHELL ["/bin/bash", "-c"]
+ARG DEBIAN_FRONTEND=noninteractive
 # patch dependencies for pyppeteer
 RUN apt-get update && \
     apt-get install -y  \
