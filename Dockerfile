@@ -61,16 +61,10 @@ RUN apt-get update && \
     libharfbuzz0b \
     libdatrie1 \
     libgraphite2-3 \
-    libgbm1
-# install texlive
-RUN apt-get update && \
-    apt-get install -y \
+    libgbm1 \
     texlive-xetex  \
     texlive-fonts-recommended  \
-    texlive-plain-generic
-# install pandoc
-RUN apt-get update && \
-    apt-get install -y \
+    texlive-plain-generic \
     pandoc
 
 # set up python dependencies

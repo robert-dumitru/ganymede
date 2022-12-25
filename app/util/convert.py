@@ -25,6 +25,7 @@ async def latex_convert(ipynb_path: str, workdir: str) -> str:
     )
     await proc.wait()
     logging.debug(f"Completed process: {proc}")
+    # log errors if process doesn't succeed
     if proc.returncode != 0:
         stdout, stderr = await proc.communicate()
         logging.warning(f"STDOUT: {stdout}")
@@ -57,6 +58,7 @@ async def chromium_convert(ipynb_path: str, workdir: str) -> str:
     )
     await proc.wait()
     logging.debug(f"Completed process: {proc}")
+    # log errors if process doesn't succeed
     if proc.returncode != 0:
         stdout, stderr = await proc.communicate()
         logging.warning(f"STDOUT: {stdout}")
