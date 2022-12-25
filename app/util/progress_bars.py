@@ -18,6 +18,7 @@ async def coro_tqdm_progress(coro: Awaitable, bar: tqdm, target: int, expected_t
     """
     running = True
 
+    # increments progress bar while other coro is running
     async def progress_bar():
         timestep = 1
         time_elapsed = 0
@@ -30,6 +31,7 @@ async def coro_tqdm_progress(coro: Awaitable, bar: tqdm, target: int, expected_t
                 time_elapsed += timestep
         return
 
+    # wraps main coro
     async def wrap_coro():
         nonlocal running
         try:

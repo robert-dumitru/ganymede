@@ -30,12 +30,14 @@ async def load_files(tb: AsyncTeleBot, document: Document, workdir: str) -> str:
         logging.warning(f"STDOUT: {stdout}")
         logging.error(f"STDERR: {stderr}")
         raise SystemError(f"Unable to create directory {workdir}")
+    # get file from telegram with file id
     file_info = await tb.get_file(document.file_id)
     file_bytes = await tb.download_file(file_info.file_path)
     async with aiofiles.open(f"{workdir}/{document.file_name}", "wb") as file:
         await file.write(file_bytes)
     logging.debug(f"Downloaded file to {workdir}/{document.file_name}")
     file_body, ext = os.path.splitext(document.file_name)
+    # checks file structure and returns path of main jupyter notebook
     match ext:
         case ".ipynb":
             return document.file_name
