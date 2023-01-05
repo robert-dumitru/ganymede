@@ -1,4 +1,5 @@
 import logging
+import datetime
 import os
 import aiopg
 from telebot.types import Message
@@ -22,8 +23,8 @@ async def log_to_db(message: Message, result: str) -> None:
             password=os.getenv("PGPASSWORD")
         ) as conn:
             async with conn.cursor() as cur:
-                query = "INSERT INTO ipynb_table (user_id, exit_message, file_id) VALUES (%s, %s, %s);"
-                values = (message.from_user.id, result, message.document.file_id)
+                query = "INSERT INTO ipynb_table (user_id, exit_message, file_id, timestamp) VALUES (%s, %s, %s, %s);"
+                values = (message.from_user.id, result, message.document.file_id, datetime.datetime.now().isoformat())
                 await cur.execute(query, values)
         logging.debug(f"Successfully logged query with values {values}")
         return
