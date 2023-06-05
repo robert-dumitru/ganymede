@@ -30,7 +30,7 @@ async def latex_convert(ipynb_path: str, workdir: str) -> str:
         stdout, stderr = await proc.communicate()
         logging.warning(f"STDOUT: {stdout}")
         logging.error(f"STDERR: {stderr}")
-        raise SystemError(f"Failed to convert notebook via LaTeX")
+        raise SystemError("Failed to convert notebook via LaTeX")
     pdf_path = os.path.splitext(ipynb_path)[0] + ".pdf"
     return pdf_path
 
@@ -63,6 +63,6 @@ async def chromium_convert(ipynb_path: str, workdir: str) -> str:
         stdout, stderr = await proc.communicate()
         logging.warning(f"STDOUT: {stdout}")
         logging.error(f"STDERR: {stderr}")
-        raise SystemError(f"Failed to convert notebook via Chromium")
+        raise SystemError("Failed to convert notebook via Chromium")
     pdf_path: str = os.path.splitext(ipynb_path)[0] + ".pdf"
     return pdf_path

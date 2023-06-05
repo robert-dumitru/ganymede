@@ -1,11 +1,11 @@
-FROM python:3.10-bullseye as builder
+FROM python:3.11-bullseye as builder
 
 SHELL ["/bin/bash", "-c"]
 COPY pyproject.toml poetry.lock ./
 RUN curl -sSL https://install.python-poetry.org | python3 -
 RUN ${HOME}/.local/bin/poetry export --output requirements.txt
 
-FROM python:3.10-bullseye
+FROM python:3.11-bullseye
 
 SHELL ["/bin/bash", "-c"]
 ARG DEBIAN_FRONTEND=noninteractive

@@ -20,7 +20,7 @@ optional=true
 
 [tool.poetry.group.dev.dependencies]
 black = "^22.10.0"
-pylint = "^2.15.5"
+ruff = "^0.0.270"
 
 [build-system]
 requires = ["poetry-core"]
