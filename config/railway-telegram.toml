@@ -1,4 +1,4 @@
 [build]
-builder = "docker"
+builder = "DOCKER"
 dockerfilePath = "Dockerfile.telegram"
 
