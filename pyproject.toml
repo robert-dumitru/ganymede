@@ -16,8 +16,6 @@ nbconvert = {extras = ["webpdf"], version = "^7.7.4"}
 
 [tool.poetry.group.client.dependencies]
 python-telegram-bot = "^20.7"
-starlette = "^0.33.0"
-uvicorn = {extras = ["standard"], version = "^0.24.0.post1"}
 
 [tool.poetry.group.dev]
 optional=true
