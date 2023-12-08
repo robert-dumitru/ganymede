@@ -5,7 +5,14 @@ import os
 import asyncio
 import uuid
 
-from workflows.conversion import JupyterConversion
+from workflows.conversion import (
+    JupyterConversion,
+    upload_mongo_file,
+    download_mongo_file,
+    preprocess_file,
+    convert_file,
+    cleanup_path,
+)
 
 
 async def main():
@@ -32,7 +39,13 @@ async def main():
     handle = Worker(
         client,
         task_queue=task_queue,
-        activities=[],  # TODO: add file cache dependent activities
+        activities=[
+            upload_mongo_file,
+            download_mongo_file,
+            preprocess_file,
+            convert_file,
+            cleanup_path,
+        ],
     )
     run_futures.append(handle.run())
 
