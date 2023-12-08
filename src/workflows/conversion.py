@@ -5,13 +5,13 @@ import asyncio
 import uuid
 from datetime import datetime
 from functools import wraps
-from typing import Any, Awaitable, Callable, TypeVar, cast
+from typing import Any, Callable, TypeVar, cast
 from nbconvert.exporters import PDFExporter, WebPDFExporter
 from nbconvert.preprocessors import LatexPreprocessor
 from zipfile import ZipFile
 from tarfile import TarFile
 
-F = TypeVar("F", bound=Callable[..., Awaitable[Any]])
+F = TypeVar("F", bound=Callable[..., Any])
 
 
 async def heartbeat_every(delay: float, *details: Any) -> None:
@@ -23,8 +23,7 @@ async def heartbeat_every(delay: float, *details: Any) -> None:
 
 
 def auto_heartbeat(fn: F) -> F:
-    # We want to ensure that the type hints from the original callable are
-    # available via our wrapper, so we use the functools wraps decorator
+    # NOTE: this converts a sync function to an async task
     @wraps(fn)
     async def wrapper(*args, **kwargs):
         heartbeat_timeout = activity.info().heartbeat_timeout
@@ -35,7 +34,8 @@ def auto_heartbeat(fn: F) -> F:
                 heartbeat_every(heartbeat_timeout.total_seconds() / 2)
             )
         try:
-            return await fn(*args, **kwargs)
+            loop = asyncio.get_running_loop()
+            return await loop.run_in_executor(None, fn, *args, **kwargs)
         finally:
             if heartbeat_task:
                 heartbeat_task.cancel()
@@ -51,36 +51,24 @@ async def get_task_queue() -> str:
     raise NotImplementedError
 
 
-def _download_mongo_file(file_id: str, path: str) -> None:
-    # TODO: make sure this is correct lol
+@activity.defn
+@auto_heartbeat
+def download_mongo_file(file_id: str) -> Path:
+    tmp_path = Path("tmp") / str(uuid.uuid4())
     client = MongoClient()
     db = client.ganymede
     fs = db.fs
-    fs.download_to_stream(file_id, path)
+    fs.download_to_stream(file_id, tmp_path)
+    return tmp_path
 
 
 @activity.defn
 @auto_heartbeat
-async def download_mongo_file(file_id: str) -> Path:
-    tmp_path = Path("tmp") / str(uuid.uuid4())
-    loop = asyncio.get_running_loop()
-    await loop.run_in_executor(None, _download_mongo_file, file_id, tmp_path)
-    return tmp_path
-
-
-def _upload_mongo_file(path: str) -> str:
+def upload_mongo_file(path: str) -> str:
     client = MongoClient()
     db = client.ganymede
     fs = db.fs
     new_id = fs.upload_from_stream(path)
-    return new_id
-
-
-@activity.defn
-@auto_heartbeat
-async def upload_mongo_file(path: str) -> str:
-    loop = asyncio.get_running_loop()
-    new_id = await loop.run_in_executor(None, _upload_mongo_file, path)
     return new_id
 
 
@@ -117,10 +105,13 @@ def search_for_notebook(path: Path) -> Path:
         raise ValueError("Multiple jupyter notebooks found")
 
 
-def _preprocess_file(path: Path) -> Path:
+@activity.defn
+@auto_heartbeat
+async def preprocess_file(path: str) -> str:
+    path = Path(path)
     match path.suffix:
         case ".ipynb":
-            return path
+            return str(path)
         case ".zip":
             with ZipFile(path, "r") as zip_file:
                 zip_file.extractall(path.parent)
@@ -133,17 +124,13 @@ def _preprocess_file(path: Path) -> Path:
             raise ValueError("File must be a .ipynb, .zip, or .tar")
 
     notebook_path = search_for_notebook(path)
-    return notebook_path
+    return str(notebook_path)
 
 
 @activity.defn
 @auto_heartbeat
-async def preprocess_file(path: str) -> str:
-    raise NotImplementedError
-
-
-def _convert_file(path: Path, ctx: dict) -> Path:
-    match ctx.get("mode"):
+async def convert_file(path: str, opt: dict) -> str:
+    match opt.get("mode"):
         case "latex":
             exporter = PDFExporter()
             exporter.register_preprocessor(LatexPreprocessor())
@@ -161,8 +148,14 @@ def _convert_file(path: Path, ctx: dict) -> Path:
 
 @activity.defn
 @auto_heartbeat
-async def convert_file(path: str, opt: dict) -> str:
-    raise NotImplementedError
+def cleanup_path(path: str) -> None:
+    path = Path(path)
+    if path.is_dir():
+        for file in path.iterdir():
+            file.unlink()
+        path.rmdir()
+    else:
+        path.unlink()
 
 
 @workflow.defn
