@@ -25,6 +25,6 @@ ENV VIRTUAL_ENV=/app/.venv \
 
 COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
 
-COPY src/telegram_client.py ./telegram_client.py
+ADD src/* ./
 
 CMD ["python", "telegram_client.py"]
