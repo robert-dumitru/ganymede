@@ -11,7 +11,7 @@ WORKDIR /app
 
 COPY pyproject.toml poetry.lock ./
 
-RUN poetry install --without client && rm -rf $POETRY_CACHE_DIR
+RUN poetry install --only worker && rm -rf $POETRY_CACHE_DIR
 
 FROM python:3.11-buster as runtime
 
