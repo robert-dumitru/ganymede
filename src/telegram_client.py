@@ -6,7 +6,6 @@ from telegram.ext import (
     Application,
     CommandHandler,
     ContextTypes,
-    ConversationHandler,
     MessageHandler,
     filters,
 )
@@ -21,10 +20,29 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def start_msg(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
-        "Welcome! Please upload your files to convert, or use the command /help for detailed instructions."
+        "Welcome! Please upload your files to convert, or use the /help command for detailed instructions."
     )
+
+
+async def help_msg(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await update.message.reply_text(
+        "To convert something, send me a zip file or ipynb file. I'll convert it to a pdf and send it back to you. "
+        "If your file is a zip file, it must contain exactly one ipynb file."
+    )
+
+
+async def fallback_msg(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await update.message.reply_text(
+        "Sorry, I didn't understand that. Please check the /help command to discover what I can do."
+    )
+
+
+async def process_file(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await update.message.reply_text("Currently testing, check back soon :)")
+    # TODO: invoke temporal workflow
+    return
 
 
 def main() -> None:
@@ -34,13 +52,25 @@ def main() -> None:
     application = Application.builder().token(os.getenv("TELEGRAM_TOKEN")).build()
     application.add_handlers(
         [
-            CommandHandler("start", start),
+            CommandHandler("start", start_msg),
+            CommandHandler("help", help_msg),
+            MessageHandler(
+                filters.Document.ZIP
+                | filters.Document.TARGZ
+                | filters.Document.FileExtension("ipynb"),
+                process_file,
+            ),
+            MessageHandler(filters.ALL, fallback_msg),
         ]
     )
 
-    application.run_webhook(listen="0.0.0.0", port=os.getenv("PORT"), webhook_url=os.getenv("WEBHOOK_URL"))
+    application.run_webhook(
+        listen="0.0.0.0",
+        port=os.getenv("PORT"),
+        webhook_url=os.getenv("WEBHOOK_URL"),
+        secret_token=os.getenv("WEBHOOK_SECRET"),
+    )
 
 
 if __name__ == "__main__":
     main()
-
