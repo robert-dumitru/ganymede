@@ -10,6 +10,8 @@ from telegram.ext import (
     filters,
 )
 
+from conversion import convert
+
 # Enable logging
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
@@ -39,10 +41,16 @@ async def fallback_msg(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     )
 
 
+async def error_msg(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    logger.error("Exception while handling an update:", exc_info=context.error)
+    await update.message.reply_text(
+        "Sorry, something went wrong. Please try again later, or file an issue at "
+        "https://github.com/robert-dumitru/ganymede/issues"
+    )
+
+
 async def process_file(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text("Currently testing, check back soon :)")
-    # TODO: invoke temporal workflow
-    return
+    await convert(update)
 
 
 def main() -> None:
@@ -63,6 +71,7 @@ def main() -> None:
             MessageHandler(filters.ALL, fallback_msg),
         ]
     )
+    application.add_error_handler(error_msg)
 
     application.run_webhook(
         listen="0.0.0.0",

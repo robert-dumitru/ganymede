@@ -11,7 +11,7 @@ WORKDIR /app
 
 COPY pyproject.toml poetry.lock ./
 
-RUN poetry install --only worker && rm -rf $POETRY_CACHE_DIR
+RUN poetry install && rm -rf $POETRY_CACHE_DIR
 
 FROM python:3.11-buster as runtime
 
@@ -21,16 +21,16 @@ ENV PYTHONUNBUFFERED=1 \
 ENV VIRTUAL_ENV=/app/.venv \
     PATH="/app/.venv/bin:$PATH"
 
-COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
-
-ADD src/* ./
-
 RUN apt-get update && apt-get install -y  \
     texlive-xetex  \
     texlive-fonts-recommended  \
     texlive-plain-generic  \
     pandoc
-RUN playwright install
+COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
+RUN echo "deb http://ftp.us.debian.org/debian buster main non-free" >> /etc/apt/sources.list.d/fonts.list
+RUN playwright install --with-deps chromium
 
-CMD ["python", "temporal_worker.py"]
+ADD src/* ./
+
+CMD ["python", "main.py"]
 
