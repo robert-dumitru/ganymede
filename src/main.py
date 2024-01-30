@@ -10,7 +10,7 @@ from telegram.ext import (
     filters,
 )
 
-from conversion import convert
+from util import convert_from_update, spinner
 
 # Enable logging
 logging.basicConfig(
@@ -49,14 +49,12 @@ async def error_msg(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     )
 
 
+@spinner("Converting your file, hang tight...")
 async def process_file(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await convert(update)
+    await convert_from_update(update)
 
 
 def main() -> None:
-    """Run the bot."""
-    # Create the Application and pass it your bot's token.
-
     application = Application.builder().token(os.getenv("TELEGRAM_TOKEN")).build()
     application.add_handlers(
         [

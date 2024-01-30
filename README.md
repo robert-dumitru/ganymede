@@ -1,6 +1,6 @@
-# IPYNB Converter Bot
+# Ganymede
 
-This repository contains the code for the IPYNB Converter Bot, a telegram bot that converts jupyter notebooks to PDF. 
+This repository contains the code for Ganymede, a telegram bot that converts jupyter notebooks to PDF. 
 The bot is currently available at this link: [https://t.me/ipynb_converter_bot](https://t.me/ipynb_converter_bot)
 
 Compared to other methods of converting jupyter notebooks online, this bot can render latex formulas in markdown cells 
