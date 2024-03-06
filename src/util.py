@@ -19,7 +19,7 @@ def search_for_notebook(path: Path) -> Path:
                 if file.suffix == ".ipynb":
                     notebooks.append(file)
                 elif file.is_dir():
-                    notebooks.append(_search(file))
+                    notebooks += _search(file)
             return notebooks
         elif path.suffix == ".ipynb":
             return [path]
@@ -53,6 +53,9 @@ def nbconvert_wrapper(notebook_path: Path, conversion_mode: str) -> Path:
 
 
 def spinner(msg: str):
+    """
+    Decorator to display a spinner while a handler is running.
+    """
 
     def decorator(handler):
 
@@ -61,18 +64,23 @@ def spinner(msg: str):
 
             async def _spinner(update) -> None:
                 nonlocal processing
-                spinner_str = "⣾⣽⣻⢿⡿⣟⣯⣷"
+                spinner_str = "▉▊▋▌▍▎▏▎▍▌▋▊"
                 spinner_msg = await update.message.reply_text(f"{spinner_str[-1]} {msg}")
                 ctr = 0
                 while processing:
                     await asyncio.sleep(1)
                     await spinner_msg.edit_text(f"{spinner_str[ctr % len(spinner_str)]} {msg}")
                     ctr += 1
-                await spinner_msg.edit_text(f"Done! ({ctr} seconds elapsed)")
+                await spinner_msg.edit_text(f"Done!")
 
             async def handler_with_signal(update, context):
                 nonlocal processing
-                await handler(update, context)
+                try:
+                    await handler(update, context)
+                except Exception as e:
+                    # stop spinner
+                    processing = False
+                    raise e
                 processing = False
 
             await asyncio.gather(_spinner(update), handler_with_signal(update, context))

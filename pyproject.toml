@@ -9,8 +9,8 @@ readme = "README.md"
 python = "^3.11"
 jupyter = "^1.0.0"
 nbconvert = {extras = ["webpdf"], version = "^7.7.4"}
-temporalio = "^1.5.0"
 python-telegram-bot = {extras = ["webhooks"], version = "^20.7"}
+prometheus-client = "^0.20.0"
 
 [tool.poetry.group.dev]
 optional=true
