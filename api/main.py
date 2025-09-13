@@ -4,6 +4,18 @@ from pydantic import BaseModel
 from datetime import datetime
 import asyncpg
 import os
+from contextlib import asynccontextmanager
+
+db_pool: asyncpg.Pool | None = None
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):  # pyright: ignore[reportUnusedParameter]
+    global db_pool
+    db_pool = await asyncpg.create_pool(dsn=os.getenv("DATABASE_URL"))
+    yield
+    await db_pool.close()
+
 
 app = FastAPI()
 
@@ -45,13 +57,16 @@ async def healthcheck():
 async def start_job(
     job_request: JobRequest, background_tasks: BackgroundTasks
 ) -> JobStatus:
-    conn = await asyncpg.connect(os.getenv("DATABASE_URL"))
-    job_row = await conn.fetchrow(
-        """
-            INSERT INTO jobs (input_file_id) VALUES ($1) RETURNING *;
-        """,
-        job_request.file_id,
-    )
+    if db_pool is None:
+        raise Exception("DB Pool is not initialized")
+
+    async with db_pool.acquire() as conn:
+        job_row = await conn.fetchrow(
+            """
+                INSERT INTO jobs (input_file_id) VALUES ($1) RETURNING *;
+            """,
+            job_request.file_id,
+        )
 
     if job_row is None:
         raise Exception("Cannot create job")
@@ -63,13 +78,15 @@ async def start_job(
 
 @app.get("/jobs/{job_id}")
 async def get_job_status(job_id: str):
-    conn = await asyncpg.connect(os.getenv("DATABASE_URL"))
-    job_row = await conn.fetchrow(
-        """
-            SELECT * FROM jobs WHERE id = $1;
-        """,
-        job_id,
-    )
+    if db_pool is None:
+        raise Exception("DB Pool is not initialized")
+    async with db_pool.acquire() as conn:
+        job_row = await conn.fetchrow(
+            """
+                SELECT * FROM jobs WHERE id = $1;
+            """,
+            job_id,
+        )
 
     if job_row is None:
         raise Exception("Cannot create job")
