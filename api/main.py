@@ -1,7 +1,7 @@
 from fastapi import FastAPI, BackgroundTasks
 from typing import Literal
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, timezone
 import asyncpg
 import os
 from contextlib import asynccontextmanager
@@ -26,22 +26,57 @@ class JobRequest(BaseModel):
 
 class JobStatus(BaseModel):
     id: str
+    input_file_id: str
     status: Literal["running", "success", "error"]
-    start_time: datetime
+    started_at: datetime
     error: str | None = None
-    input_file_id: str | None = None
+    output_file_id: str | None = None
 
 
-async def download_file(file_id: str) -> tuple[str | None, NotImplementedError | None]:
-    return None, NotImplementedError()
+async def download_file(file_id: str) -> str:
+    raise NotImplementedError
 
 
-async def convert_webpdf(path: str) -> tuple[str | None, NotImplementedError | None]:
-    return None, NotImplementedError()
+async def upload_file(path: str) -> str:
+    raise NotImplementedError
 
 
-async def convert_latex(path: str) -> tuple[str | None, NotImplementedError | None]:
-    return None, NotImplementedError()
+async def convert_webpdf(path: str) -> str:
+    raise NotImplementedError
+
+
+async def convert_latex(path: str) -> str:
+    raise NotImplementedError
+
+
+async def record_error(job_id: str, error: str) -> None:
+    if db_pool is None:
+        raise Exception("DB Pool is not initialized")
+
+    async with db_pool.acquire() as conn:
+        _ = await conn.execute(
+            """
+                UPDATE jobs SET status='error', error=$1, finished_at=$2 WHERE id=$3
+            """,
+            error,
+            datetime.now(timezone.utc),
+            job_id,
+        )
+
+
+async def record_success(job_id: str, output_file_id: str) -> None:
+    if db_pool is None:
+        raise Exception("DB Pool is not initialized")
+
+    async with db_pool.acquire() as conn:
+        _ = await conn.execute(
+            """
+                UPDATE jobs SET status='success', output_file_id=$1, finished_at=$2 WHERE id=$3
+            """,
+            output_file_id,
+            datetime.now(timezone.utc),
+            job_id,
+        )
 
 
 async def convert(job: JobStatus) -> None:
@@ -89,7 +124,7 @@ async def get_job_status(job_id: str):
         )
 
     if job_row is None:
-        raise Exception("Cannot create job")
+        raise Exception("No job found")
 
     job_status = JobStatus(**dict(job_row))  # pyright: ignore[reportAny]
     return job_status
