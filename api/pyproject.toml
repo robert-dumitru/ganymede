@@ -1,0 +1,14 @@
+[project]
+name = "ganymede"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi[standard]>=0.115.12",
+    "asyncpg>=0.30.0",
+    "asyncpg-stubs>=0.30.2",
+    "nbconvert>=7.16.4",
+    "aioboto3>=13.0.1",
+    "aiofiles>=24.1.0",
+]

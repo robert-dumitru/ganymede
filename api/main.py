@@ -1,23 +1,24 @@
-from fastapi import FastAPI, BackgroundTasks
+from fastapi import FastAPI, BackgroundTasks, HTTPException
 from typing import Literal
 from pydantic import BaseModel
-from datetime import datetime, timezone
-import asyncpg
+from datetime import datetime
 import os
 from contextlib import asynccontextmanager
+from pathlib import Path
+import shutil
 
-db_pool: asyncpg.Pool | None = None
+from .database import db
+from .conversions import download_file, upload_file, prepare_files, convert_latex, convert_webpdf
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):  # pyright: ignore[reportUnusedParameter]
-    global db_pool
-    db_pool = await asyncpg.create_pool(dsn=os.getenv("DATABASE_URL"))
+    await db.connect(os.getenv("DATABASE_URL"))
     yield
-    await db_pool.close()
+    await db.close()
 
 
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
 
 
 class JobRequest(BaseModel):
@@ -33,54 +34,49 @@ class JobStatus(BaseModel):
     output_file_id: str | None = None
 
 
-async def download_file(file_id: str) -> str:
-    raise NotImplementedError
-
-
-async def upload_file(path: str) -> str:
-    raise NotImplementedError
-
-
-async def convert_webpdf(path: str) -> str:
-    raise NotImplementedError
-
-
-async def convert_latex(path: str) -> str:
-    raise NotImplementedError
-
-
-async def record_error(job_id: str, error: str) -> None:
-    if db_pool is None:
-        raise Exception("DB Pool is not initialized")
-
-    async with db_pool.acquire() as conn:
-        _ = await conn.execute(
-            """
-                UPDATE jobs SET status='error', error=$1, finished_at=$2 WHERE id=$3
-            """,
-            error,
-            datetime.now(timezone.utc),
-            job_id,
-        )
-
-
-async def record_success(job_id: str, output_file_id: str) -> None:
-    if db_pool is None:
-        raise Exception("DB Pool is not initialized")
-
-    async with db_pool.acquire() as conn:
-        _ = await conn.execute(
-            """
-                UPDATE jobs SET status='success', output_file_id=$1, finished_at=$2 WHERE id=$3
-            """,
-            output_file_id,
-            datetime.now(timezone.utc),
-            job_id,
-        )
-
-
 async def convert(job: JobStatus) -> None:
-    pass
+    """
+    Main conversion orchestration: download, prepare, convert (LaTeX then WebPDF fallback), upload.
+
+    This function handles all errors and updates the job status accordingly.
+    """
+    local_path: str | None = None
+
+    try:
+        # 1. Download file from S3
+        local_path = await download_file(job.input_file_id)
+
+        # 2. Prepare files (validate and extract if needed)
+        ipynb_path = await prepare_files(local_path)
+
+        # 3. Try LaTeX conversion first, fallback to WebPDF
+        try:
+            pdf_path = await convert_latex(ipynb_path)
+        except Exception:
+            # Fallback to WebPDF if LaTeX failed
+            pdf_path = await convert_webpdf(ipynb_path)
+
+        # 4. Upload result to S3
+        output_id = await upload_file(pdf_path)
+
+        # 5. Record success
+        await db.record_success(job.id, output_id)
+
+    except Exception as e:
+        # Record any error that occurred
+        await db.record_error(job.id, str(e))
+
+    finally:
+        # 6. Cleanup temporary files
+        if local_path:
+            try:
+                # Clean up the job directory
+                job_dir = Path(local_path).parent
+                if job_dir.exists() and "ganymede-" in str(job_dir):
+                    shutil.rmtree(job_dir, ignore_errors=True)
+            except Exception:
+                # Best effort cleanup, don't fail the job if cleanup fails
+                pass
 
 
 @app.get("/healthcheck")
@@ -92,39 +88,14 @@ async def healthcheck():
 async def start_job(
     job_request: JobRequest, background_tasks: BackgroundTasks
 ) -> JobStatus:
-    if db_pool is None:
-        raise Exception("DB Pool is not initialized")
-
-    async with db_pool.acquire() as conn:
-        job_row = await conn.fetchrow(
-            """
-                INSERT INTO jobs (input_file_id) VALUES ($1) RETURNING *;
-            """,
-            job_request.file_id,
-        )
-
-    if job_row is None:
-        raise Exception("Cannot create job")
-
-    job_status = JobStatus(**dict(job_row))  # pyright: ignore[reportAny]
+    job_status = await db.create_job(job_request.file_id)
     background_tasks.add_task(convert, job_status)
     return job_status
 
 
 @app.get("/jobs/{job_id}")
-async def get_job_status(job_id: str):
-    if db_pool is None:
-        raise Exception("DB Pool is not initialized")
-    async with db_pool.acquire() as conn:
-        job_row = await conn.fetchrow(
-            """
-                SELECT * FROM jobs WHERE id = $1;
-            """,
-            job_id,
-        )
-
-    if job_row is None:
-        raise Exception("No job found")
-
-    job_status = JobStatus(**dict(job_row))  # pyright: ignore[reportAny]
+async def get_job_status(job_id: str) -> JobStatus:
+    job_status = await db.get_job(job_id)
+    if job_status is None:
+        raise HTTPException(status_code=404, detail="Job not found")
     return job_status
