@@ -1,7 +1,8 @@
 from fastapi import FastAPI, BackgroundTasks, HTTPException
 from typing import Literal
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from datetime import datetime
+from uuid import UUID
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -32,6 +33,13 @@ class JobStatus(BaseModel):
     started_at: datetime
     error: str | None = None
     output_file_id: str | None = None
+
+    @field_validator("id", mode="before")
+    @classmethod
+    def coerce_uuid_to_str(cls, v):
+        if isinstance(v, UUID):
+            return str(v)
+        return v
 
 
 async def convert(job: JobStatus) -> None:

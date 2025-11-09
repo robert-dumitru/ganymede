@@ -6,8 +6,17 @@ import aioboto3
 import zipfile
 import json
 import shutil
+import logging
 from pathlib import Path
 from nbconvert import PDFExporter, WebPDFExporter
+
+# Configure logging to stdout
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler()]
+)
+logger = logging.getLogger(__name__)
 
 
 # Configuration - imported from environment
@@ -42,6 +51,7 @@ async def download_file(file_id: str) -> str:
         ValueError: If file size exceeds limit
     """
     if not all([S3_ENDPOINT_URL, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, S3_BUCKET_NAME]):
+        logger.error("S3 configuration is incomplete - missing required environment variables")
         raise StorageError("S3 configuration is incomplete")
 
     # Create temporary directory for this job
@@ -66,20 +76,22 @@ async def download_file(file_id: str) -> str:
             file_size_mb = head_response["ContentLength"] / (1024 * 1024)
 
             if file_size_mb > MAX_FILE_SIZE_MB:
+                logger.error(f"File size ({file_size_mb:.2f}MB) exceeds limit ({MAX_FILE_SIZE_MB}MB) for file_id: {file_id}")
                 shutil.rmtree(job_dir, ignore_errors=True)
                 raise ValueError(f"File size ({file_size_mb:.2f}MB) exceeds limit ({MAX_FILE_SIZE_MB}MB)")
 
             # Download file
             async with aiofiles.open(local_path, "wb") as f:
                 response = await s3.get_object(Bucket=S3_BUCKET_NAME, Key=file_id)
-                async with response["Body"] as stream:
-                    while chunk := await stream.read(8192):
-                        await f.write(chunk)
+                stream = response["Body"]
+                while chunk := await stream.read(8192):
+                    await f.write(chunk)
 
         return str(local_path)
     except ValueError:
         raise  # Re-raise file size errors
     except Exception as e:
+        logger.exception(f"Failed to download file {file_id}: {e}")
         raise StorageError(f"Failed to download file {file_id}") from e
 
 
@@ -91,6 +103,7 @@ async def upload_file(path: str) -> str:
         StorageError: If S3 configuration is incomplete or upload fails
     """
     if not all([S3_ENDPOINT_URL, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, S3_BUCKET_NAME]):
+        logger.error("S3 configuration is incomplete - missing required environment variables")
         raise StorageError("S3 configuration is incomplete")
 
     # Generate unique file ID
@@ -117,6 +130,7 @@ async def upload_file(path: str) -> str:
 
         return file_id
     except Exception as e:
+        logger.exception(f"Failed to upload file from {path}: {e}")
         raise StorageError(f"Failed to upload file") from e
 
 
@@ -134,6 +148,7 @@ async def prepare_files(path: str) -> str:
 
     # Validate file type
     if not file_path.suffix.lower() in [".ipynb", ".zip"]:
+        logger.error(f"Invalid file type: {file_path.suffix} for file: {path}")
         raise ValueError(f"Invalid file type: {file_path.suffix}. Only .ipynb and .zip are allowed")
 
     # Handle .ipynb files
@@ -146,10 +161,12 @@ async def prepare_files(path: str) -> str:
 
             # Basic validation: check if it has required notebook structure
             if "cells" not in notebook or "metadata" not in notebook:
+                logger.error(f"Invalid notebook structure in {path}: missing 'cells' or 'metadata'")
                 raise ValueError("Invalid notebook structure: missing 'cells' or 'metadata'")
 
             return str(file_path)
         except json.JSONDecodeError as e:
+            logger.exception(f"Invalid JSON in notebook {path}: {e}")
             raise ValueError(f"Invalid JSON in notebook: {e}") from e
 
     # Handle .zip files
@@ -166,6 +183,7 @@ async def prepare_files(path: str) -> str:
                     # Security: Check for path traversal attempts
                     member_path = Path(member)
                     if member_path.is_absolute() or ".." in member_path.parts:
+                        logger.error(f"Path traversal attempt detected in zip {path}: {member}")
                         raise ValueError(f"Invalid path in zip: {member}")
 
                     # Extract only .ipynb files
@@ -176,8 +194,10 @@ async def prepare_files(path: str) -> str:
 
                 # Validate exactly one .ipynb file
                 if len(ipynb_files) == 0:
+                    logger.error(f"Zip file {path} contains no .ipynb files")
                     raise ValueError("Zip file must contain at least one .ipynb file")
                 if len(ipynb_files) > 1:
+                    logger.error(f"Zip file {path} contains {len(ipynb_files)} .ipynb files, expected exactly one")
                     raise ValueError(f"Zip file must contain exactly one .ipynb file, found {len(ipynb_files)}")
 
                 ipynb_path = ipynb_files[0]
@@ -188,13 +208,16 @@ async def prepare_files(path: str) -> str:
                     notebook = json.loads(content)
 
                 if "cells" not in notebook or "metadata" not in notebook:
+                    logger.error(f"Invalid notebook structure in extracted notebook from {path}")
                     raise ValueError("Invalid notebook structure in zip")
 
                 return str(ipynb_path)
 
         except zipfile.BadZipFile as e:
+            logger.exception(f"Invalid or corrupted zip file {path}: {e}")
             raise ValueError("Invalid or corrupted zip file") from e
         except json.JSONDecodeError as e:
+            logger.exception(f"Invalid JSON in extracted notebook from {path}: {e}")
             raise ValueError(f"Invalid JSON in extracted notebook: {e}") from e
 
 
@@ -232,8 +255,10 @@ async def convert_latex(path: str) -> str:
         return str(output_path)
 
     except asyncio.TimeoutError:
+        logger.error(f"LaTeX conversion timed out after {LATEX_TIMEOUT_SEC} seconds for file: {path}")
         raise TimeoutError(f"LaTeX conversion timed out after {LATEX_TIMEOUT_SEC} seconds")
     except Exception as e:
+        logger.exception(f"LaTeX conversion failed for file {path}: {e}")
         raise ConversionError(f"LaTeX conversion failed") from e
 
 
@@ -275,6 +300,8 @@ async def convert_webpdf(path: str) -> str:
         return str(output_path)
 
     except asyncio.TimeoutError:
+        logger.error(f"WebPDF conversion timed out after {WEBPDF_TIMEOUT_SEC} seconds for file: {path}")
         raise TimeoutError(f"WebPDF conversion timed out after {WEBPDF_TIMEOUT_SEC} seconds")
     except Exception as e:
+        logger.exception(f"WebPDF conversion failed for file {path}: {e}")
         raise ConversionError(f"WebPDF conversion failed") from e
