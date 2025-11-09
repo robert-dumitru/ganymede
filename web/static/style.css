@@ -1,0 +1,321 @@
+/* Font Faces */
+@font-face {
+    font-family: 'Berkeley Mono';
+    src: url('/static/BerkeleyMono-Regular.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-feature-settings: "liga" 0, "kern" 0;
+    font-variant-ligatures: none;
+}
+
+@font-face {
+    font-family: 'Berkeley Mono';
+    src: url('/static/BerkeleyMono-Bold.woff2') format('woff2');
+    font-weight: 700;
+    font-style: normal;
+    font-feature-settings: "liga" 0, "kern" 0;
+    font-variant-ligatures: none;
+}
+
+@font-face {
+    font-family: 'Berkeley Mono';
+    src: url('/static/BerkeleyMono-Oblique.woff2') format('woff2');
+    font-weight: 400;
+    font-style: italic;
+    font-feature-settings: "liga" 0, "kern" 0;
+    font-variant-ligatures: none;
+}
+
+@font-face {
+    font-family: 'Berkeley Mono';
+    src: url('/static/BerkeleyMono-Bold-Oblique.woff2') format('woff2');
+    font-weight: 700;
+    font-style: italic;
+    font-feature-settings: "liga" 0, "kern" 0;
+    font-variant-ligatures: none;
+}
+
+/* Base Styles */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Berkeley Mono', monospace;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 1.2;
+    letter-spacing: 0;
+    font-feature-settings: "liga" 0, "kern" 0;
+    font-variant-ligatures: none;
+    background-color: #ffffff;
+    color: #1d1d1f;
+    margin: 0;
+    padding: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+}
+
+main {
+    padding: 0;
+    margin: 0;
+}
+
+h1, h2, h3, h4, h5, h6, p {
+    margin: 0;
+    padding: 0;
+    font-weight: 400;
+}
+
+a {
+    color: inherit;
+    text-decoration: underline;
+}
+
+a:hover {
+    text-decoration: none;
+}
+
+/* TUI Window */
+.tui-window {
+    max-width: 700px;
+    width: 100%;
+    background-color: #fafafa;
+    border: 1px solid #e0e0e0;
+    box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.1);
+    padding: 2.5rem;
+}
+
+.tui-title {
+    font-size: 18px;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin: 0 0 1.5rem 0;
+    text-align: center;
+    letter-spacing: 2px;
+}
+
+.tui-description {
+    font-size: 14px;
+    margin: 0 0 2rem 0;
+    opacity: 0.8;
+    text-align: center;
+}
+
+/* Form Elements */
+.upload-form {
+    margin: 0 0 1.5rem 0;
+}
+
+input[type="file"] {
+    font-family: 'Berkeley Mono', monospace;
+    font-size: 14px;
+    padding: 0.75em;
+    margin-bottom: 1.5em;
+    border: 1px solid #d0d0d0;
+    background-color: #ffffff;
+    color: #1d1d1f;
+    cursor: pointer;
+    width: 100%;
+}
+
+input[type="file"]:hover {
+    border-color: #4ade80;
+}
+
+button {
+    font-family: 'Berkeley Mono', monospace;
+    font-size: 14px;
+    padding: 0.75em 2.5em;
+    border: 2px solid #4ade80;
+    background-color: #4ade80;
+    color: #1d1d1f;
+    cursor: pointer;
+    text-transform: uppercase;
+    font-weight: 700;
+    width: 100%;
+    transition: all 0.2s ease;
+}
+
+button:hover:not(:disabled) {
+    background-color: #22c55e;
+    border-color: #22c55e;
+    color: #000000;
+}
+
+button:active:not(:disabled) {
+    background-color: #16a34a;
+    border-color: #16a34a;
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.info {
+    font-size: 12px;
+    opacity: 0.6;
+    margin: 0 0 2rem 0;
+    text-align: center;
+}
+
+/* Status Container */
+#status {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background-color: #f0f0f0;
+    border: 1px solid #d0d0d0;
+}
+
+#status:empty {
+    display: none;
+}
+
+#status p {
+    margin: 0 0 0.75em 0;
+}
+
+#status p:last-child {
+    margin-bottom: 0;
+}
+
+.status-label {
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: 1px;
+    margin-bottom: 1em;
+    display: block;
+}
+
+/* Status States */
+.error {
+    color: #ef4444;
+}
+
+.error .status-label {
+    color: #ef4444;
+}
+
+.success {
+    color: #4ade80;
+}
+
+.success .status-label {
+    color: #4ade80;
+}
+
+/* Status Action Buttons */
+.status-action {
+    margin-top: 1.5rem;
+}
+
+.status-secondary-action {
+    margin-top: 1rem;
+    text-align: center;
+}
+
+.status-secondary-action a {
+    opacity: 0.7;
+}
+
+/* Download Link */
+.download-link {
+    display: inline-block;
+    padding: 0.75em 2.5em;
+    border: 2px solid #4ade80;
+    background-color: #4ade80;
+    color: #1d1d1f;
+    text-decoration: none;
+    text-transform: uppercase;
+    font-weight: 700;
+    text-align: center;
+    transition: all 0.2s ease;
+}
+
+.download-link:hover {
+    background-color: #22c55e;
+    border-color: #22c55e;
+    color: #000000;
+}
+
+/* Spinner Animation */
+.spinner-text {
+    display: inline-block;
+    animation: blink 1.5s infinite;
+}
+
+@keyframes blink {
+    0%, 49% {
+        opacity: 1;
+    }
+    50%, 100% {
+        opacity: 0.4;
+    }
+}
+
+/* Dark Mode */
+@media (prefers-color-scheme: dark) {
+    body {
+        background-color: #1c1c1e;
+        color: #f2f2f7;
+    }
+
+    .tui-window {
+        background-color: #2a2a2e;
+        border-color: #3e3e42;
+        box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.4);
+    }
+
+    input[type="file"] {
+        border-color: #4a4a4e;
+        background-color: #1c1c1e;
+        color: #f2f2f7;
+    }
+
+    input[type="file"]:hover {
+        border-color: #4ade80;
+    }
+
+    #status {
+        background-color: #1c1c1e;
+        border-color: #3e3e42;
+    }
+
+    .error {
+        color: #f87171;
+    }
+
+    .error .status-label {
+        color: #f87171;
+    }
+
+    .success {
+        color: #4ade80;
+    }
+
+    .success .status-label {
+        color: #4ade80;
+    }
+}
+
+/* Responsive */
+@media (max-width: 800px) {
+    body {
+        padding: 1rem;
+    }
+
+    .tui-window {
+        padding: 1.5rem;
+        box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.1);
+    }
+}
+
+@media (max-width: 800px) and (prefers-color-scheme: dark) {
+    .tui-window {
+        box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.4);
+    }
+}

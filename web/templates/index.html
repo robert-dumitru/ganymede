@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ganymede - Notebook Converter</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+</head>
+<body>
+    <main>
+        <div class="tui-window">
+            <h1 class="tui-title">Ganymede</h1>
+            <p class="tui-description">Convert Jupyter notebooks to PDF</p>
+
+            <form
+                class="upload-form"
+                hx-post="/upload"
+                hx-target="#status"
+                hx-swap="innerHTML"
+                hx-encoding="multipart/form-data"
+            >
+                <input
+                    type="file"
+                    name="file"
+                    accept=".ipynb,.zip"
+                    required
+                    id="file-input"
+                >
+                <button type="submit">Convert</button>
+            </form>
+
+            <p class="info">Maximum file size: 50MB • Supported formats: .ipynb, .zip</p>
+
+            <div id="status"></div>
+        </div>
+    </main>
+
+    <script>
+        // Disable submit button while uploading
+        document.body.addEventListener('htmx:beforeRequest', function(evt) {
+            if (evt.detail.elt.tagName === 'FORM') {
+                const button = evt.detail.elt.querySelector('button[type="submit"]');
+                if (button) {
+                    button.disabled = true;
+                    button.textContent = 'Uploading...';
+                }
+            }
+        });
+
+        document.body.addEventListener('htmx:afterRequest', function(evt) {
+            if (evt.detail.elt.tagName === 'FORM') {
+                const button = evt.detail.elt.querySelector('button[type="submit"]');
+                const fileInput = evt.detail.elt.querySelector('input[type="file"]');
+                if (button) {
+                    button.disabled = false;
+                    button.textContent = 'Convert';
+                }
+                if (fileInput) {
+                    fileInput.value = '';
+                }
+            }
+        });
+    </script>
+</body>
+</html>
