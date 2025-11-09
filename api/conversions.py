@@ -94,7 +94,7 @@ async def upload_file(path: str) -> str:
         raise StorageError("S3 configuration is incomplete")
 
     # Generate unique file ID
-    file_id = f"outputs/{uuid.uuid4()}.pdf"
+    file_id = f"ganymede/outputs/{uuid.uuid4()}.pdf"
 
     try:
         # Upload to S3

@@ -32,7 +32,7 @@ async def upload_to_s3(file_content: bytes, filename: str) -> str:
         raise HTTPException(status_code=500, detail="S3 configuration incomplete")
 
     # Generate unique file ID
-    file_id = f"uploads/{uuid.uuid4()}/{filename}"
+    file_id = f"ganymede/uploads/{uuid.uuid4()}/{filename}"
 
     try:
         session = aioboto3.Session()
