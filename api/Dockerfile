@@ -17,30 +17,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     texlive-fonts-recommended \
     texlive-plain-generic \
     pandoc \
-    # Chromium dependencies for WebPDFExporter
-    chromium \
-    chromium-sandbox \
-    fonts-liberation \
-    libasound2 \
-    libatk-bridge2.0-0 \
-    libatk1.0-0 \
-    libcups2 \
-    libdbus-1-3 \
-    libdrm2 \
-    libgbm1 \
-    libgtk-3-0 \
-    libnspr4 \
-    libnss3 \
-    libx11-xcb1 \
-    libxcomposite1 \
-    libxdamage1 \
-    libxrandr2 \
-    xdg-utils \
     # Cleanup to reduce image size
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app/.venv /app/.venv
+
+# Install Chromium with system dependencies (must run as root before USER ganymede)
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+RUN /app/.venv/bin/playwright install --with-deps chromium
 
 # Set up non-root user
 RUN useradd -m -u 1000 ganymede && \
@@ -52,10 +37,7 @@ COPY . /app/api
 
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
-    WORKDIR=/tmp/ganymede \
-    # Point nbconvert to system Chromium
-    PYPPETEER_CHROMIUM_REVISION=chromium \
-    PYPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+    WORKDIR=/tmp/ganymede
 
 USER ganymede
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
